@@ -584,6 +584,10 @@
         },
         onTeamChanged: (data) => {
           document.getElementById('currentTeam').textContent = data.currentTeam;
+        },
+        onSessionEnded: (data) => {
+          console.log('Session ended:', data);
+          handleSessionEnded();
         }
       });
       

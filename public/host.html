@@ -853,40 +853,48 @@
       }
     }
 
-    function endSession() {
-      if (!currentSessionId) {
+    async function endSession() {
+      if (!currentSessionId || !hostToken) {
         alert('لا توجد جلسة نشطة');
         return;
       }
       
       if (confirm('هل أنت متأكد من إنهاء الجلسة؟')) {
-        // Clear session data
-        localStorage.removeItem('hostSessionId');
-        localStorage.removeItem('hostToken');
-        
-        // Unsubscribe from real-time updates
-        window.realtimeManager.unsubscribeAll();
-        
-        // Reset UI
-        currentSessionId = null;
-        hostToken = null;
-        teams = [];
-        currentTeam = 'لا يوجد';
-        answersByTeam = {};
-        
-        document.getElementById('sessionId').textContent = 'لم تبدأ';
-        document.getElementById('currentTeam').textContent = 'لا يوجد';
-        document.getElementById('answersList').innerHTML = '<div class="empty-state">لم يتم استلام إجابات بعد</div>';
-        document.querySelector('#leaderboardTable').innerHTML = '<tr><td colspan="2" class="empty-state">لا توجد نتائج بعد</td></tr>';
-        
-        // Clear selections
-        const teamSelect = document.getElementById('teamSelect');
-        Array.from(teamSelect.options).forEach(option => option.selected = false);
-        
-        const questionSelect = document.getElementById('questionSelect');
-        Array.from(questionSelect.options).forEach(option => option.selected = false);
-        
-        alert('تم إنهاء الجلسة');
+        try {
+          // End session on server
+          await api.endSession(currentSessionId, hostToken);
+          
+          // Clear session data
+          localStorage.removeItem('hostSessionId');
+          localStorage.removeItem('hostToken');
+          
+          // Unsubscribe from real-time updates
+          window.realtimeManager.unsubscribeAll();
+          
+          // Reset UI
+          currentSessionId = null;
+          hostToken = null;
+          teams = [];
+          currentTeam = 'لا يوجد';
+          answersByTeam = {};
+          
+          document.getElementById('sessionId').textContent = 'لم تبدأ';
+          document.getElementById('currentTeam').textContent = 'لا يوجد';
+          document.getElementById('answersList').innerHTML = '<div class="empty-state">لم يتم استلام إجابات بعد</div>';
+          document.querySelector('#leaderboardTable').innerHTML = '<tr><td colspan="2" class="empty-state">لا توجد نتائج بعد</td></tr>';
+          
+          // Clear selections
+          const teamSelect = document.getElementById('teamSelect');
+          Array.from(teamSelect.options).forEach(option => option.selected = false);
+          
+          const questionSelect = document.getElementById('questionSelect');
+          Array.from(questionSelect.options).forEach(option => option.selected = false);
+          
+          alert('تم إنهاء الجلسة');
+        } catch (error) {
+          console.error('Error ending session:', error);
+          alert('خطأ في إنهاء الجلسة: ' + error.message);
+        }
       }
     }
 

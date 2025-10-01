@@ -319,6 +319,51 @@ app.post('/api/session/:sessionId/change-team', async (req, res) => {
   }
 });
 
+// End session
+app.post('/api/session/:sessionId/end', async (req, res) => {
+  const { sessionId } = req.params;
+  const { hostToken } = req.body;
+  
+  try {
+    const session = await prisma.session.findFirst({
+      where: { sessionId, hostToken }
+    });
+    
+    if (!session) {
+      return res.status(401).json({ error: 'Invalid session or host token' });
+    }
+    
+    // Update session status to ended
+    await prisma.session.update({
+      where: { id: session.id },
+      data: { status: 'ended' }
+    });
+    
+    // Create session ended event
+    await prisma.sessionEvent.create({
+      data: {
+        sessionId: session.id,
+        eventType: 'session_ended',
+        eventData: { 
+          sessionId: session.sessionId,
+          endedAt: new Date().toISOString()
+        }
+      }
+    });
+    
+    // Set all judges offline for this session
+    await prisma.judge.updateMany({
+      where: { sessionId: session.id },
+      data: { isOnline: false }
+    });
+    
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error ending session:', error);
+    res.status(500).json({ error: 'Failed to end session' });
+  }
+});
+
 // Submit answer
 app.post('/api/answer/submit', async (req, res) => {
   const { sessionId, judgeToken, answer, questionIndex } = req.body;

@@ -72,6 +72,9 @@ class RealtimeManager {
             case 'leaderboard_updated':
               callbacks.onLeaderboardUpdated?.(event.eventData);
               break;
+            case 'session_ended':
+              callbacks.onSessionEnded?.(event.eventData);
+              break;
             default:
               callbacks.onEvent?.(event);
           }
@@ -203,6 +206,13 @@ const api = {
     return this.request(`/api/session/${sessionId}/change-team`, {
       method: 'POST',
       body: JSON.stringify({ direction, hostToken })
+    });
+  },
+
+  async endSession(sessionId, hostToken) {
+    return this.request(`/api/session/${sessionId}/end`, {
+      method: 'POST',
+      body: JSON.stringify({ hostToken })
     });
   },
 
