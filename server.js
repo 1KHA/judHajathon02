@@ -232,27 +232,53 @@ app.post('/api/session/:sessionId/start-questions', async (req, res) => {
       }
     }
     
-    // Get current team
+    // Get current team with enhanced error handling
     const teams = JSON.parse(session.teams);
     const currentTeamName = teams[session.currentTeamIndex];
     
-    console.log('Looking for team:', currentTeamName, 'at index:', session.currentTeamIndex);
+    console.log('=== TEAM LOOKUP DEBUG ===');
+    console.log('Session ID:', session.id);
+    console.log('Current team index:', session.currentTeamIndex);
+    console.log('Looking for team:', currentTeamName);
     console.log('Available teams:', teams);
     
+    if (!currentTeamName) {
+      console.error('ERROR: No team name found at index', session.currentTeamIndex);
+      return res.status(400).json({ error: 'No current team found' });
+    }
+    
+    // First, try to find existing team
     let currentTeam = await prisma.team.findFirst({
       where: { name: currentTeamName }
     });
     
+    console.log('Existing team found:', currentTeam ? `ID: ${currentTeam.id}` : 'None');
+    
     // If team not found, create it
-    if (!currentTeam && currentTeamName) {
-      console.log('Team not found, creating:', currentTeamName);
-      currentTeam = await prisma.team.create({
-        data: { name: currentTeamName }
-      });
+    if (!currentTeam) {
+      console.log('Creating new team:', currentTeamName);
+      try {
+        currentTeam = await prisma.team.create({
+          data: { name: currentTeamName }
+        });
+        console.log('Team created successfully with ID:', currentTeam.id);
+      } catch (createError) {
+        console.error('Error creating team:', createError);
+        // Try to find it again in case it was created by another request
+        currentTeam = await prisma.team.findFirst({
+          where: { name: currentTeamName }
+        });
+      }
     }
     
     const teamId = currentTeam?.id || null;
-    console.log('Using teamId:', teamId, 'for team:', currentTeamName);
+    console.log('Final teamId:', teamId, 'for team:', currentTeamName);
+    console.log('=== END TEAM LOOKUP DEBUG ===');
+    
+    if (!teamId) {
+      console.error('CRITICAL ERROR: Could not get team ID for team:', currentTeamName);
+      return res.status(500).json({ error: 'Failed to resolve team ID' });
+    }
     
     // Update session with current questions
     await prisma.session.update({
@@ -535,6 +561,26 @@ app.get('/api/session/:sessionId/judges', async (req, res) => {
   }
 });
 
+// Find team by name (helper endpoint for fallback)
+app.get('/api/team/find/:teamName', async (req, res) => {
+  const { teamName } = req.params;
+  
+  try {
+    const team = await prisma.team.findFirst({
+      where: { name: teamName }
+    });
+    
+    if (!team) {
+      return res.status(404).json({ error: 'Team not found' });
+    }
+    
+    res.json({ team: { id: team.id, name: team.name } });
+  } catch (error) {
+    console.error('Error finding team:', error);
+    res.status(500).json({ error: 'Failed to find team' });
+  }
+});
+
 // Get session state
 app.get('/api/session/:sessionId/state', async (req, res) => {
   const { sessionId } = req.params;
@@ -563,6 +609,13 @@ app.get('/api/session/:sessionId/state', async (req, res) => {
     const teams = JSON.parse(session.teams || '[]');
     const currentQuestions = session.currentQuestions ? JSON.parse(session.currentQuestions) : [];
     
+    console.log('=== SESSION STATE DEBUG ===');
+    console.log('Session currentTeamId:', session.currentTeamId);
+    console.log('Current team index:', session.currentTeamIndex);
+    console.log('Teams array:', teams);
+    console.log('Current team name:', teams[session.currentTeamIndex]);
+    console.log('=== END SESSION STATE DEBUG ===');
+    
     res.json({
       session: {
         id: session.id,
@@ -570,6 +623,7 @@ app.get('/api/session/:sessionId/state', async (req, res) => {
         status: session.status,
         currentTeamIndex: session.currentTeamIndex,
         currentTeam: teams[session.currentTeamIndex],
+        currentTeamId: session.currentTeamId, // Include the team ID
         teams: teams,
         currentQuestions: currentQuestions,
         totalPoints: session.totalPoints,

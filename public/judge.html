@@ -685,25 +685,65 @@
         }
       });
       
-      // Check if we have a valid team ID, if not try to get it from session state
+      // Enhanced team ID resolution with multiple fallback strategies
       let teamIdToUse = currentTeamId;
+      
+      console.log('=== TEAM ID RESOLUTION DEBUG ===');
+      console.log('Initial currentTeamId:', currentTeamId);
+      
       if (!teamIdToUse) {
-        console.log('No teamId available, trying to get from session state...');
+        console.log('No teamId available, trying fallback strategies...');
+        
+        // Strategy 1: Get from session state
         try {
+          console.log('Strategy 1: Getting from session state...');
           const state = await api.getSessionState(currentSessionId);
+          console.log('Session state response:', state);
+          
           if (state.session && state.session.currentTeamId) {
             teamIdToUse = state.session.currentTeamId;
             currentTeamId = teamIdToUse;
-            console.log('Got teamId from session state:', teamIdToUse);
+            console.log('✅ Got teamId from session state:', teamIdToUse);
+          } else {
+            console.log('❌ No currentTeamId in session state');
           }
         } catch (error) {
-          console.error('Error getting session state:', error);
+          console.error('❌ Error getting session state:', error);
+        }
+        
+        // Strategy 2: Try to find team by name if we have current team name
+        if (!teamIdToUse && document.getElementById('currentTeam').textContent !== 'لم يتم اختيار فريق') {
+          console.log('Strategy 2: Finding team by name...');
+          const currentTeamName = document.getElementById('currentTeam').textContent;
+          console.log('Current team name from UI:', currentTeamName);
+          
+          try {
+            const response = await fetch(`/api/team/find/${encodeURIComponent(currentTeamName)}`);
+            if (response.ok) {
+              const data = await response.json();
+              if (data.team && data.team.id) {
+                teamIdToUse = data.team.id;
+                currentTeamId = teamIdToUse;
+                console.log('✅ Got teamId from team name lookup:', teamIdToUse);
+              }
+            } else {
+              console.log('❌ Team not found by name:', currentTeamName);
+            }
+          } catch (error) {
+            console.error('❌ Error finding team by name:', error);
+          }
         }
       }
       
+      console.log('Final teamIdToUse:', teamIdToUse);
+      console.log('=== END TEAM ID RESOLUTION DEBUG ===');
+      
       if (!teamIdToUse) {
-        alert('خطأ: لم يتم اختيار فريق. يرجى إعادة تحميل الصفحة.');
-        console.error('No team ID available for final answers submission');
+        const errorMsg = 'خطأ: لم يتم اختيار فريق. يرجى إعادة تحميل الصفحة أو الانضمام مرة أخرى.';
+        alert(errorMsg);
+        console.error('CRITICAL: No team ID available for final answers submission');
+        console.error('Current session ID:', currentSessionId);
+        console.error('Current team from UI:', document.getElementById('currentTeam').textContent);
         return;
       }
       
