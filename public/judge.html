@@ -580,10 +580,13 @@
           console.log('Session created:', data);
         },
         onQuestionsStarted: (data) => {
+          console.log('Questions started event received in real-time');
           displayQuestions(data);
         },
         onTeamChanged: (data) => {
+          console.log('Team changed event received in real-time');
           document.getElementById('currentTeam').textContent = data.currentTeam;
+          currentTeamId = data.teamId; // Update team ID when team changes
         },
         onSessionEnded: (data) => {
           console.log('Session ended:', data);
@@ -597,6 +600,24 @@
           handleSessionEnded();
         }
       });
+      
+      // CRITICAL: Immediately check for existing questions after subscribing
+      // This ensures judges who join after questions are sent still see them
+      setTimeout(async () => {
+        try {
+          const state = await api.getSessionState(sessionId);
+          if (state.session && state.session.currentQuestions && state.session.currentQuestions.length > 0) {
+            console.log('Found existing questions in session state, displaying them now');
+            displayQuestions({
+              questions: state.session.currentQuestions,
+              currentTeam: state.session.currentTeam,
+              teamId: state.session.currentTeamId
+            });
+          }
+        } catch (error) {
+          console.error('Error checking for existing questions:', error);
+        }
+      }, 500); // Small delay to ensure subscription is established
     }
 
     function displayQuestions(data) {

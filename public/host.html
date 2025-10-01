@@ -904,16 +904,20 @@
       // Subscribe to session events
       window.realtimeManager.subscribeToSession(sessionId, {
         onQuestionsStarted: (data) => {
-          console.log('Questions started event received:', data);
+          console.log('Questions started event received in real-time:', data);
         },
         onTeamChanged: (data) => {
           currentTeam = data.currentTeam;
           document.getElementById('currentTeam').textContent = currentTeam;
           console.log('Team changed to:', currentTeam);
+          
+          // Clear answers for new team
+          answersByTeam = {};
+          updateAnswersDisplay();
         },
         onAnswerSubmitted: (data) => {
-          console.log('Answer submitted event received:', data);
-          // Update answers display
+          console.log('Answer submitted event received in real-time:', data);
+          // Update answers display immediately
           if (!answersByTeam[data.teamName]) {
             answersByTeam[data.teamName] = [];
           }
@@ -925,8 +929,8 @@
           updateAnswersDisplay();
         },
         onFinalAnswersSubmitted: (data) => {
-          console.log('Final answers submitted event received:', data);
-          // Handle final answers submission
+          console.log('Final answers submitted event received in real-time:', data);
+          // Handle final answers submission immediately
           if (data.teamName && data.judgeName) {
             if (!answersByTeam[data.teamName]) {
               answersByTeam[data.teamName] = [];
@@ -937,20 +941,24 @@
               points: data.totalPoints || 0
             });
             updateAnswersDisplay();
+            
+            // Also update leaderboard when final answers are submitted
+            setTimeout(() => updateLeaderboard(), 1000);
           }
         },
         onLeaderboardUpdated: (data) => {
-          console.log('Leaderboard updated event received');
+          console.log('Leaderboard updated event received in real-time');
           updateLeaderboard();
         },
         onJudgeJoined: (data) => {
-          console.log('Judge joined event received:', data);
+          console.log('Judge joined event received in real-time:', data);
           updateJudgesList();
         }
       });
 
       // Subscribe to judge updates
       window.realtimeManager.subscribeToJudges(sessionId, (payload) => {
+        console.log('Judge database change detected:', payload.eventType);
         if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
           updateJudgesList();
         }
@@ -961,8 +969,14 @@
         updateJudgesList();
       }, 10000);
 
-      // Initial judges list update
+      // Add polling fallback for leaderboard (every 15 seconds)
+      setInterval(() => {
+        updateLeaderboard();
+      }, 15000);
+
+      // Initial updates
       updateJudgesList();
+      updateLeaderboard();
     }
 
     function updateAnswersDisplay() {
