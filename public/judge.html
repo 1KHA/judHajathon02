@@ -436,7 +436,7 @@
     let judgeName = null;
     let currentQuestions = [];
     let currentTeamId = null;
-    let selectedAnswers = {}; // Track selected answers by questionId
+    let selectedAnswersByTeam = {}; // Track selected answers by teamId -> questionId
     
     // Wait for Supabase to be initialized
     window.addEventListener('supabase-ready', function() {
@@ -587,9 +587,9 @@
         },
         onTeamChanged: (data) => {
           console.log('Team changed event received in real-time');
-          // Clear selected answers for new team
-          selectedAnswers = {};
-          console.log('Cleared selected answers for new team');
+          console.log('Team changed from', currentTeamId, 'to', data.teamId);
+          // Note: Don't clear selectedAnswersByTeam here - let each team keep its own answers
+          // The restoreSelectedAnswers function will only restore for the current team
           // Refresh snapshot to get updated team info
           refreshJudgeSnapshot();
         },
@@ -699,9 +699,15 @@
     }
 
     function restoreSelectedAnswers() {
-      console.log('Restoring selected answers:', selectedAnswers);
+      if (!currentTeamId || !selectedAnswersByTeam[currentTeamId]) {
+        console.log('No selections to restore for team:', currentTeamId);
+        return;
+      }
       
-      Object.entries(selectedAnswers).forEach(([questionId, selectedAnswer]) => {
+      const teamSelections = selectedAnswersByTeam[currentTeamId];
+      console.log('Restoring selected answers for team', currentTeamId, ':', teamSelections);
+      
+      Object.entries(teamSelections).forEach(([questionId, selectedAnswer]) => {
         const questionDiv = document.querySelector(`[data-question-id="${questionId}"]`);
         if (questionDiv) {
           const buttons = questionDiv.querySelectorAll('.answer-btn');
@@ -709,7 +715,7 @@
             if (btn.innerText === selectedAnswer) {
               btn.classList.add('selected');
               btn.disabled = true;
-              console.log('Restored selection for question', questionId, ':', selectedAnswer);
+              console.log('Restored selection for team', currentTeamId, 'question', questionId, ':', selectedAnswer);
             }
           });
         }
@@ -727,10 +733,13 @@
       btn.classList.add('selected');
       btn.disabled = true;
       
-      // Store selection persistently
+      // Store selection persistently per team
       const answerText = typeof choice === 'object' ? choice.text : choice;
-      selectedAnswers[questionId] = answerText;
-      console.log('Stored answer for question', questionId, ':', answerText);
+      if (!selectedAnswersByTeam[currentTeamId]) {
+        selectedAnswersByTeam[currentTeamId] = {};
+      }
+      selectedAnswersByTeam[currentTeamId][questionId] = answerText;
+      console.log('Stored answer for team', currentTeamId, 'question', questionId, ':', answerText);
       
       // Submit answer
       try {
@@ -741,18 +750,19 @@
         // Re-enable button on error but keep selection stored
         btn.classList.remove('selected');
         btn.disabled = false;
-        // Don't remove from selectedAnswers in case of network error
+        // Don't remove from selectedAnswersByTeam in case of network error
       }
     }
 
     async function submitFinalAnswers() {
-      // Use persistent selectedAnswers instead of DOM state
-      const answers = Object.entries(selectedAnswers).map(([questionId, answer]) => ({
+      // Use persistent selectedAnswersByTeam instead of DOM state
+      const teamSelections = selectedAnswersByTeam[currentTeamId] || {};
+      const answers = Object.entries(teamSelections).map(([questionId, answer]) => ({
         questionIndex: parseInt(questionId),
         answer: answer
       }));
       
-      console.log('Submitting final answers from persistent state:', answers);
+      console.log('Submitting final answers for team', currentTeamId, 'from persistent state:', answers);
       
       // Enhanced team ID resolution with multiple fallback strategies
       let teamIdToUse = currentTeamId;
