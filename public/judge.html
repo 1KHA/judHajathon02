@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>الانضمام للتحكيم</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --primary-color: #2563eb;
+      --primary-hover: #1d4ed8;
+      --primary-light: #dbeafe;
+      --secondary-color: #64748b;
+      --secondary-light: #f1f5f9;
+      --danger-color: #ef4444;
+      --success-color: #10b981;
+      --warning-color: #f59e0b;
+      --text-primary: #1e293b;
+      --text-secondary: #64748b;
+      --border-color: #e2e8f0;
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+      --radius: 8px;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, system-ui, -apple-system, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      color: var(--text-primary);
+      line-height: 1.6;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .main-container {
+      width: 100%;
+      max-width: 800px;
+    }
+
+    /* Login Card */
+    .login-card {
+      background: white;
+      border-radius: 16px;
+      padding: 40px;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+      text-align: center;
+      animation: slideUp 0.5s ease-out;
+    }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .login-card h1 {
+      color: var(--primary-color);
+      font-size: 32px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+    }
+
+    .login-card h1::before {
+      content: "⚖️";
+      font-size: 36px;
+    }
+
+    .login-subtitle {
+      color: var(--text-secondary);
+      margin-bottom: 32px;
+      font-size: 16px;
+    }
+
+    /* Session Badge */
+    .session-info {
+      background: var(--primary-light);
+      color: var(--primary-color);
+      padding: 12px 20px;
+      border-radius: 12px;
+      margin-bottom: 24px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .session-info::before {
+      content: "●";
+      color: var(--success-color);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    /* Form Elements */
+    .form-group {
+      margin-bottom: 20px;
+      text-align: right;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      font-size: 14px;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid var(--border-color);
+      border-radius: 8px;
+      font-size: 16px;
+      transition: all 0.2s;
+      background: white;
+    }
+
+    .form-group input:focus {
+      outline: none;
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 3px var(--primary-light);
+    }
+
+    /* Buttons */
+    .btn {
+      padding: 12px 32px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      justify-content: center;
+    }
+
+    .btn-primary {
+      background: var(--primary-color);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-hover);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .btn-success {
+      background: var(--success-color);
+      color: white;
+    }
+
+    .btn-success:hover {
+      background: #059669;
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+
+    /* Questions Container */
+    .questions-card {
+      background: white;
+      border-radius: 16px;
+      padding: 32px;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+      margin-top: 20px;
+      animation: slideUp 0.5s ease-out;
+    }
+
+    .team-header {
+      background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+      color: white;
+      padding: 20px;
+      border-radius: 12px;
+      margin-bottom: 24px;
+      text-align: center;
+    }
+
+    .team-header h2 {
+      font-size: 20px;
+      margin-bottom: 4px;
+    }
+
+    .team-name {
+      font-size: 28px;
+      font-weight: 700;
+    }
+
+    /* Question Box */
+    .question-box {
+      background: var(--secondary-light);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 20px;
+      border-right: 4px solid var(--primary-color);
+    }
+
+    .question-number {
+      display: inline-block;
+      background: var(--primary-color);
+      color: white;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+
+    .question-text {
+      font-size: 18px;
+      color: var(--text-primary);
+      margin-bottom: 20px;
+      font-weight: 500;
+    }
+
+    /* Answer Buttons */
+    .choices-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+    }
+
+    .answer-btn {
+      padding: 14px 20px;
+      background: white;
+      border: 2px solid var(--border-color);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 16px;
+      font-weight: 500;
+      color: var(--text-primary);
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .answer-btn:hover:not(:disabled) {
+      background: var(--primary-light);
+      border-color: var(--primary-color);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .answer-btn.selected {
+      background: var(--primary-color);
+      color: white;
+      border-color: var(--primary-color);
+      animation: selectPulse 0.3s ease-out;
+    }
+
+    @keyframes selectPulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+
+    .answer-btn.selected::after {
+      content: "✓";
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      background: white;
+      color: var(--primary-color);
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+    }
+
+    .answer-btn:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+
+    /* Submit Button */
+    #submitFinalBtn {
+      margin-top: 32px;
+      background: linear-gradient(135deg, var(--success-color), #059669);
+      font-size: 18px;
+      padding: 16px 40px;
+      box-shadow: var(--shadow-lg);
+    }
+
+    #submitFinalBtn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Success Message */
+    .success-message {
+      background: var(--success-color);
+      color: white;
+      padding: 16px;
+      border-radius: 8px;
+      margin-top: 20px;
+      text-align: center;
+      font-weight: 600;
+      animation: slideUp 0.5s ease-out;
+    }
+
+    /* Loading State */
+    .loading {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid var(--primary-light);
+      border-top-color: var(--primary-color);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-right: 8px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+      .login-card {
+        padding: 24px;
+      }
+
+      .questions-card {
+        padding: 20px;
+      }
+
+      .choices-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .team-name {
+        font-size: 24px;
+      }
+    }
+
+    /* Scrollbar Styling */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: var(--secondary-light);
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--secondary-color);
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--primary-color);
+    }
+  </style>
+</head>
+<body>
+  <div class="main-container">
+    <!-- Login Card -->
+    <div class="login-card" id="loginCard">
+      <h1>الانضمام للتحكيم</h1>
+      <p class="login-subtitle">أدخل اسمك للانضمام إلى جلسة التحكيم</p>
+      
+      <div class="session-info">
+        <span>معرف الجلسة:</span>
+        <span id="sessionId">لم تبدأ</span>
+      </div>
+
+      <div class="form-group">
+        <label for="name">اسمك الكامل</label>
+        <input type="text" id="name" placeholder="أدخل اسمك هنا">
+      </div>
+
+      <button class="btn btn-primary" onclick="joinGame()">
+        <span>🚀</span>
+        انضمام للجلسة
+      </button>
+    </div>
+
+    <!-- Questions Card -->
+    <div class="questions-card" id="question-box" style="display:none;">
+      <div class="team-header">
+        <h2>يتم تحكيم</h2>
+        <div class="team-name" id="currentTeam">لم يتم اختيار فريق</div>
+      </div>
+
+      <div id="questions-container"></div>
+
+      <button id="submitFinalBtn" class="btn btn-success" style="display: none;">
+        <span>📤</span>
+        إرسال الإجابات النهائية
+      </button>
+    </div>
+  </div>
+
+  <!-- Supabase Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    // Configure Supabase credentials
+    window.SUPABASE_URL = 'YOUR_SUPABASE_URL';
+    window.SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+  </script>
+  <script src="/supabase-client.js"></script>
+  
+  <script>
+    let currentSessionId = null;
+    let judgeToken = null;
+    let judgeName = null;
+    let currentQuestions = [];
+    let currentTeamId = null;
+    
+    // Check for existing session on page load
+    const savedSessionId = localStorage.getItem('judgeSessionId');
+    const savedJudgeName = localStorage.getItem('judgeName');
+    const savedJudgeToken = localStorage.getItem('judgeToken');
+
+    if (savedSessionId && savedJudgeName && savedJudgeToken) {
+      // Attempt to rejoin existing session
+      rejoinSession(savedSessionId, savedJudgeName, savedJudgeToken);
+    }
+
+    // Check for active sessions periodically
+    async function checkForActiveSession() {
+      // This would need an API endpoint to check for active sessions
+      // For now, we'll rely on the session ID being shared
+    }
+
+    async function joinGame() {
+      const name = document.getElementById('name').value;
+      if (!name || name.trim() === '') {
+        alert('يرجى إدخال اسمك');
+        return;
+      }
+
+      try {
+        const result = await api.joinAsJudge('1234', name);
+        
+        if (result.success) {
+          judgeName = result.judge.name;
+          judgeToken = result.judge.judgeToken;
+          
+          // Store judge info in localStorage
+          localStorage.setItem('judgeName', judgeName);
+          localStorage.setItem('judgeToken', judgeToken);
+          
+          // Smooth transition
+          document.getElementById('loginCard').style.display = 'none';
+          document.getElementById('question-box').style.display = 'block';
+          
+          // Show success notification
+          showSuccessMessage(`مرحباً ${judgeName}! تم الانضمام بنجاح`);
+          
+          // Wait for session to start
+          waitForSession();
+        }
+      } catch (error) {
+        console.error('Error joining:', error);
+        alert(`خطأ في الانضمام: ${error.message}`);
+      }
+    }
+
+    // Add enter key support for login
+    document.getElementById('name').addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        joinGame();
+      }
+    });
+
+    async function rejoinSession(sessionId, name, token) {
+      try {
+        // Try to get session state
+        const state = await api.getSessionState(sessionId);
+        
+        if (state.session) {
+          currentSessionId = sessionId;
+          judgeName = name;
+          judgeToken = token;
+          
+          document.getElementById('sessionId').textContent = sessionId;
+          document.getElementById('loginCard').style.display = 'none';
+          document.getElementById('question-box').style.display = 'block';
+          
+          // Subscribe to real-time updates
+          subscribeToSession(sessionId);
+          
+          // Show current questions if any
+          if (state.session.currentQuestions && state.session.currentQuestions.length > 0) {
+            displayQuestions({
+              questions: state.session.currentQuestions,
+              currentTeam: state.session.currentTeam,
+              teamId: state.session.currentTeamId
+            });
+          }
+          
+          showSuccessMessage(`تم إعادة الانضمام للجلسة كـ ${name}`);
+        }
+      } catch (error) {
+        console.log('Rejoin failed:', error);
+        // Clear invalid tokens
+        localStorage.removeItem('judgeSessionId');
+        localStorage.removeItem('judgeName');
+        localStorage.removeItem('judgeToken');
+        
+        // Show login form
+        document.getElementById('loginCard').style.display = 'block';
+        document.getElementById('question-box').style.display = 'none';
+        alert('انتهت صلاحية الجلسة السابقة. يرجى الانضمام مرة أخرى.');
+      }
+    }
+
+    function waitForSession() {
+      // Poll for session updates
+      const checkInterval = setInterval(async () => {
+        try {
+          // This would need an API endpoint to get current session for judge
+          // For now, we'll wait for real-time events
+        } catch (error) {
+          console.error('Error checking for session:', error);
+        }
+      }, 5000);
+    }
+
+    function subscribeToSession(sessionId) {
+      currentSessionId = sessionId;
+      localStorage.setItem('judgeSessionId', sessionId);
+      document.getElementById('sessionId').textContent = sessionId;
+      
+      // Subscribe to session events
+      window.realtimeManager.subscribeToSession(sessionId, {
+        onSessionCreated: (data) => {
+          console.log('Session created:', data);
+        },
+        onQuestionsStarted: (data) => {
+          displayQuestions(data);
+        },
+        onTeamChanged: (data) => {
+          document.getElementById('currentTeam').textContent = data.currentTeam;
+        }
+      });
+      
+      // Subscribe to session state changes
+      window.realtimeManager.subscribeToSessionState(sessionId, (session) => {
+        if (session.status === 'ended') {
+          handleSessionEnded();
+        }
+      });
+    }
+
+    function displayQuestions(data) {
+      console.log('Received question data:', data);
+      document.getElementById('currentTeam').textContent = data.currentTeam || 'لم يتم اختيار فريق';
+      
+      currentQuestions = Array.isArray(data.questions) ? data.questions : [data.questions];
+      currentTeamId = data.teamId;
+      
+      const container = document.getElementById('questions-container');
+      container.innerHTML = '';
+      
+      // Show submit button when questions are received
+      document.getElementById('submitFinalBtn').style.display = 'block';
+      document.getElementById('submitFinalBtn').onclick = submitFinalAnswers;
+
+      currentQuestions.forEach((question, index) => {
+        const questionDiv = document.createElement('div');
+        questionDiv.setAttribute('data-question-id', question.id);
+        questionDiv.className = 'question-box';
+
+        const questionNumber = document.createElement('div');
+        questionNumber.className = 'question-number';
+        questionNumber.textContent = `السؤال ${index + 1}`;
+        questionDiv.appendChild(questionNumber);
+
+        const questionText = document.createElement('div');
+        questionText.className = 'question-text';
+        questionText.textContent = question.text;
+        questionDiv.appendChild(questionText);
+
+        const choicesDiv = document.createElement('div');
+        choicesDiv.className = 'choices-grid';
+        
+        question.choices.forEach(choice => {
+          const btn = document.createElement('button');
+          btn.className = 'answer-btn';
+          btn.innerText = typeof choice === 'object' ? choice.text : choice;
+          btn.onclick = () => selectAnswer(question.id, choice, btn, choicesDiv);
+          choicesDiv.appendChild(btn);
+        });
+        
+        questionDiv.appendChild(choicesDiv);
+        container.appendChild(questionDiv);
+      });
+    }
+
+    async function selectAnswer(questionId, choice, btn, choicesDiv) {
+      // Reset all buttons for this question
+      choicesDiv.querySelectorAll('.answer-btn').forEach(b => {
+        b.classList.remove('selected');
+        b.disabled = false;
+      });
+      
+      // Mark this button as selected
+      btn.classList.add('selected');
+      btn.disabled = true;
+      
+      // Submit answer
+      try {
+        const answerText = typeof choice === 'object' ? choice.text : choice;
+        await api.submitAnswer(currentSessionId, judgeToken, answerText, questionId);
+        console.log('Answer submitted successfully');
+      } catch (error) {
+        console.error('Error submitting answer:', error);
+        // Re-enable button on error
+        btn.classList.remove('selected');
+        btn.disabled = false;
+      }
+    }
+
+    async function submitFinalAnswers() {
+      const answers = [];
+      const container = document.getElementById('questions-container');
+      
+      container.querySelectorAll('.answer-btn.selected').forEach(btn => {
+        const questionDiv = btn.closest('div[data-question-id]');
+        const questionId = questionDiv ? parseInt(questionDiv.getAttribute('data-question-id')) : null;
+        if (questionId !== null) {
+          answers.push({
+            questionIndex: questionId,
+            answer: btn.innerText
+          });
+        }
+      });
+      
+      if (!currentTeamId) {
+        alert('خطأ: لم يتم اختيار فريق');
+        return;
+      }
+      
+      if (answers.length !== currentQuestions.length) {
+        alert('يرجى الإجابة على جميع الأسئلة');
+        return;
+      }
+      
+      try {
+        await api.submitFinalAnswers(currentSessionId, judgeToken, currentTeamId, answers);
+        showSuccessMessage('تم إرسال الإجابات بنجاح!');
+        
+        // Disable submit button
+        document.getElementById('submitFinalBtn').disabled = true;
+      } catch (error) {
+        console.error('Error submitting final answers:', error);
+        alert('خطأ في إرسال الإجابات');
+      }
+    }
+
+    function handleSessionEnded() {
+      // Clear session data from localStorage
+      localStorage.removeItem('judgeSessionId');
+      localStorage.removeItem('judgeName');
+      localStorage.removeItem('judgeToken');
+      
+      // Unsubscribe from real-time updates
+      window.realtimeManager.unsubscribeAll();
+      
+      // Reset UI state
+      document.getElementById('loginCard').style.display = 'block';
+      document.getElementById('question-box').style.display = 'none';
+      document.getElementById('currentTeam').textContent = 'لم يتم اختيار فريق';
+      document.getElementById('questions-container').innerHTML = '';
+      document.getElementById('submitFinalBtn').style.display = 'none';
+      document.getElementById('sessionId').textContent = 'لم تبدأ';
+      
+      // Clear name input
+      document.getElementById('name').value = '';
+      
+      alert('انتهت جلسة التحكيم. يرجى الانضمام لجلسة جديدة.');
+    }
+
+    function showSuccessMessage(message) {
+      const successMsg = document.createElement('div');
+      successMsg.className = 'success-message';
+      successMsg.textContent = message;
+      document.getElementById('question-box').insertBefore(successMsg, document.getElementById('question-box').firstChild);
+      
+      setTimeout(() => {
+        successMsg.remove();
+      }, 3000);
+    }
+  </script>
+</body>
+</html>

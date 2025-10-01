@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>إضافة الأسئلة</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-color: #2563eb;
+            --primary-hover: #1d4ed8;
+            --primary-light: #dbeafe;
+            --secondary-color: #64748b;
+            --secondary-light: #f1f5f9;
+            --danger-color: #ef4444;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --border-color: #e2e8f0;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            --radius: 8px;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Header */
+        .header {
+            background: white;
+            border-radius: var(--radius);
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: var(--shadow-md);
+        }
+
+        .header h1 {
+            color: var(--primary-color);
+            font-size: 28px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header h1::before {
+            content: "📝";
+            font-size: 32px;
+        }
+
+        .header-subtitle {
+            color: var(--text-secondary);
+            margin-top: 8px;
+            font-size: 16px;
+        }
+
+        /* Control Panel */
+        .control-panel {
+            background: white;
+            border-radius: var(--radius);
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow-md);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: flex-end;
+        }
+
+        .control-group {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .control-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .control-group input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 2px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 14px;
+            transition: all 0.2s;
+            background: white;
+        }
+
+        .control-group input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px var(--primary-light);
+        }
+
+        /* Sections Container */
+        #sections-container {
+            margin-bottom: 20px;
+        }
+
+        /* Section Card */
+        .section {
+            background: white;
+            border-radius: var(--radius);
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow-md);
+            border-right: 4px solid var(--primary-color);
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .section-title input {
+            font-size: 18px;
+            font-weight: 600;
+            border: 2px solid transparent;
+            padding: 8px 12px;
+            border-radius: 6px;
+            background: var(--secondary-light);
+            color: var(--text-primary);
+            transition: all 0.2s;
+        }
+
+        .section-title input:focus {
+            border-color: var(--primary-color);
+            background: white;
+            box-shadow: 0 0 0 3px var(--primary-light);
+        }
+
+        .section-controls {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .weight-input {
+            width: 80px;
+            padding: 8px;
+            border: 2px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 14px;
+            text-align: center;
+        }
+
+        /* Question Box */
+        .question {
+            background: var(--secondary-light);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+            position: relative;
+            transition: all 0.2s;
+        }
+
+        .question:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .question-number {
+            position: absolute;
+            top: 16px;
+            left: 16px;
+            background: var(--primary-color);
+            color: white;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .question textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 14px;
+            resize: vertical;
+            min-height: 80px;
+            margin-bottom: 12px;
+            transition: all 0.2s;
+        }
+
+        .question textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px var(--primary-light);
+        }
+
+        /* Choice Row */
+        .choice-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+
+        .choice-row input[type="text"] {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .choice-row input[type="text"]:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px var(--primary-light);
+        }
+
+        .choice-row input[type="number"] {
+            width: 80px;
+            padding: 10px;
+            border: 2px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 14px;
+            text-align: center;
+        }
+
+        .choice-row::before {
+            content: "•";
+            color: var(--primary-color);
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        /* Question Actions */
+        .question-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-hover);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-secondary {
+            background: var(--secondary-color);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #475569;
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-success {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #059669;
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-danger {
+            background: var(--danger-color);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 13px;
+        }
+
+        .btn-icon {
+            padding: 8px;
+            width: 36px;
+            height: 36px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Points Summary */
+        .points-summary {
+            background: white;
+            border-radius: var(--radius);
+            padding: 20px;
+            margin-top: 20px;
+            box-shadow: var(--shadow-md);
+            border-top: 4px solid var(--success-color);
+        }
+
+        .points-summary h3 {
+            color: var(--text-primary);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .points-summary h3::before {
+            content: "📊";
+            font-size: 20px;
+        }
+
+        .points-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin-top: 12px;
+        }
+
+        .points-table thead {
+            background: var(--primary-light);
+        }
+
+        .points-table th {
+            padding: 12px;
+            text-align: right;
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--primary-color);
+        }
+
+        .points-table tbody tr {
+            transition: all 0.2s;
+        }
+
+        .points-table tbody tr:hover {
+            background: var(--secondary-light);
+        }
+
+        .points-table td {
+            padding: 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .points-table .total-row {
+            background: var(--primary-light);
+            font-weight: 600;
+        }
+
+        /* Action Buttons */
+        .action-buttons {
+            background: white;
+            border-radius: var(--radius);
+            padding: 20px;
+            margin-top: 20px;
+            box-shadow: var(--shadow-md);
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-secondary);
+        }
+
+        .empty-state::before {
+            content: "📋";
+            font-size: 48px;
+            display: block;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        /* Success Message */
+        .success-message {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--success-color);
+            color: white;
+            padding: 16px 24px;
+            border-radius: 8px;
+            box-shadow: var(--shadow-lg);
+            font-weight: 600;
+            z-index: 1000;
+            animation: slideDown 0.3s ease-out;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateX(-50%) translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .container {
+                padding: 12px;
+            }
+
+            .control-panel {
+                flex-direction: column;
+            }
+
+            .section-header {
+                flex-direction: column;
+                gap: 12px;
+            }
+
+            .question-actions {
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--secondary-light);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--secondary-color);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--primary-color);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>إضافة الأسئلة</h1>
+            <p class="header-subtitle">قم بإنشاء وتنظيم الأسئلة في أقسام مختلفة مع تحديد الأوزان والنقاط</p>
+        </div>
+
+        <div class="control-panel">
+            <div class="control-group">
+                <label for="bank-name">اسم بنك الأسئلة</label>
+                <input type="text" id="bank-name" placeholder="أدخل اسم البنك (مطلوب)">
+            </div>
+            <div class="control-group">
+                <label for="total-points-input">إجمالي النقاط</label>
+                <input type="number" id="total-points-input" min="1" value="100">
+            </div>
+            <button id="add-section" class="btn btn-primary">
+                <span>➕</span>
+                إضافة قسم جديد
+            </button>
+        </div>
+
+        <div id="sections-container">
+            <!-- Sections will be added here -->
+        </div>
+
+        <div class="points-summary">
+            <h3>توزيع النقاط</h3>
+            <div id="points-display">
+                <p class="empty-state">أضف أقساماً لرؤية توزيع النقاط</p>
+            </div>
+        </div>
+
+        <div class="action-buttons">
+            <button id="save-questions" class="btn btn-success">
+                <span>💾</span>
+                حفظ الأسئلة
+            </button>
+            <a href="/host.html" class="btn btn-secondary" style="text-decoration: none;">
+                <span>🔙</span>
+                العودة للإدارة
+            </a>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        let sections = [];
+        let totalPoints = 100;
+
+        document.getElementById('add-section').addEventListener('click', addSection);
+        document.getElementById('save-questions').addEventListener('click', saveQuestions);
+        document.getElementById('total-points-input').addEventListener('change', function() {
+            totalPoints = parseFloat(this.value) || 100;
+            updatePointsDisplay();
+        });
+
+        function addSection() {
+            const sectionId = Date.now();
+            const section = {
+                id: sectionId,
+                name: `القسم ${sections.length + 1}`,
+                weight: 1,
+                questions: []
+            };
+            sections.push(section);
+            renderSections();
+        }
+
+        function addQuestion(sectionId) {
+            const section = sections.find(s => s.id === sectionId);
+            if (section) {
+                section.questions.push({
+                    text: '',
+                    choices: [
+                        { text: '', weight: 1 },
+                        { text: '', weight: 1 }
+                    ]
+                });
+                renderSections();
+            }
+        }
+
+        function removeQuestion(sectionId, questionIndex) {
+            const section = sections.find(s => s.id === sectionId);
+            if (section) {
+                section.questions.splice(questionIndex, 1);
+                renderSections();
+            }
+        }
+
+        function removeSection(sectionId) {
+            sections = sections.filter(s => s.id !== sectionId);
+            renderSections();
+        }
+
+        function renderSections() {
+            const container = document.getElementById('sections-container');
+            container.innerHTML = '';
+
+            if (sections.length === 0) {
+                container.innerHTML = '<div class="empty-state">لا توجد أقسام بعد. اضغط على "إضافة قسم جديد" للبدء</div>';
+                updatePointsDisplay();
+                return;
+            }
+
+            sections.forEach((section, sectionIndex) => {
+                const sectionEl = document.createElement('div');
+                sectionEl.className = 'section';
+                sectionEl.innerHTML = `
+                    <div class="section-header">
+                        <div class="section-title">
+                            <span style="color: var(--primary-color); font-size: 20px;">📂</span>
+                            <input type="text" value="${section.name}" 
+                                   onchange="updateSectionName(${section.id}, this.value)"
+                                   placeholder="اسم القسم">
+                        </div>
+                        <div class="section-controls">
+                            <label style="margin-left: 8px;">الوزن:</label>
+                            <input type="number" class="weight-input" min="0.1" step="0.1" value="${section.weight}" 
+                                   onchange="updateSectionWeight(${section.id}, this.value)">
+                            <button class="btn btn-danger btn-icon" onclick="removeSection(${section.id})" title="إزالة القسم">
+                                <span>🗑️</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="questions-${section.id}"></div>
+                    <button class="btn btn-primary btn-sm" onclick="addQuestion(${section.id})">
+                        <span>➕</span>
+                        إضافة سؤال
+                    </button>
+                `;
+                container.appendChild(sectionEl);
+
+                const questionsContainer = document.getElementById(`questions-${section.id}`);
+                section.questions.forEach((question, qIndex) => {
+                    const questionEl = document.createElement('div');
+                    questionEl.className = 'question';
+                    questionEl.innerHTML = `
+                        <div class="question-number">${qIndex + 1}</div>
+                        <textarea placeholder="اكتب نص السؤال هنا..." 
+                                  onchange="updateQuestionText(${section.id}, ${qIndex}, this.value)">${question.text}</textarea>
+                        ${question.choices.map((choice, cIndex) => `
+                            <div class="choice-row">
+                                <input type="text" placeholder="خيار ${cIndex + 1}" 
+                                       value="${typeof choice === 'object' && choice !== null ? (choice.text || '') : ''}" 
+                                       onchange="updateQuestionChoice(${section.id}, ${qIndex}, ${cIndex}, this.value)">
+                                <label style="margin: 0 8px;">الوزن:</label>
+                                <input type="number" min="0" step="0.1" value="${typeof choice === 'object' && choice !== null ? (choice.weight || 1) : 1}" 
+                                       onchange="updateQuestionChoiceWeight(${section.id}, ${qIndex}, ${cIndex}, this.value)"
+                                       placeholder="الوزن">
+                            </div>
+                        `).join('')}
+                        <div class="question-actions">
+                            <div>
+                                <button type="button" class="btn btn-secondary btn-sm" onclick="addChoice(${section.id}, ${qIndex})">
+                                    <span>➕</span>
+                                    إضافة خيار
+                                </button>
+                                ${question.choices.length > 1 ? 
+                                  `<button type="button" class="btn btn-danger btn-sm" onclick="removeChoice(${section.id}, ${qIndex})">
+                                    <span>➖</span>
+                                    إزالة آخر خيار
+                                  </button>` : 
+                                  ''}
+                            </div>
+                            <button class="btn btn-danger btn-sm" onclick="removeQuestion(${section.id}, ${qIndex})">
+                                <span>🗑️</span>
+                                حذف السؤال
+                            </button>
+                        </div>
+                    `;
+                    questionsContainer.appendChild(questionEl);
+                });
+            });
+
+            updatePointsDisplay();
+        }
+
+        function updateSectionName(sectionId, name) {
+            const section = sections.find(s => s.id === sectionId);
+            if (section) section.name = name;
+        }
+
+        function updateSectionWeight(sectionId, weight) {
+            const section = sections.find(s => s.id === sectionId);
+            if (section) section.weight = parseFloat(weight);
+            updatePointsDisplay();
+        }
+
+        function updateQuestionText(sectionId, questionIndex, text) {
+            const section = sections.find(s => s.id === sectionId);
+            if (section) section.questions[questionIndex].text = text;
+        }
+
+        function updateQuestionChoice(sectionId, questionIndex, choiceIndex, value) {
+            const section = sections.find(s => s.id === sectionId);
+            if (section) {
+                // Always ensure we have a proper choice object
+                if (!section.questions[questionIndex].choices[choiceIndex] || 
+                    typeof section.questions[questionIndex].choices[choiceIndex] !== 'object') {
+                    section.questions[questionIndex].choices[choiceIndex] = {
+                        text: '',
+                        weight: 1
+                    };
+                }
+                // Update the text property
+                section.questions[questionIndex].choices[choiceIndex].text = value;
+            }
+        }
+
+        function updateQuestionChoiceWeight(sectionId, questionIndex, choiceIndex, value) {
+            const section = sections.find(s => s.id === sectionId);
+            if (section) {
+                // Always ensure we have a proper choice object
+                if (!section.questions[questionIndex].choices[choiceIndex] || 
+                    typeof section.questions[questionIndex].choices[choiceIndex] !== 'object') {
+                    section.questions[questionIndex].choices[choiceIndex] = {
+                        text: '',
+                        weight: 1
+                    };
+                }
+                // Update the weight property
+                section.questions[questionIndex].choices[choiceIndex].weight = parseFloat(value) || 0;
+            }
+        }
+
+        function addChoice(sectionId, questionIndex) {
+            const section = sections.find(s => s.id === sectionId);
+            if (section && section.questions[questionIndex]) {
+                section.questions[questionIndex].choices.push({
+                    text: '',
+                    weight: 1
+                });
+                renderSections();
+            }
+        }
+
+        function removeChoice(sectionId, questionIndex) {
+            const section = sections.find(s => s.id === sectionId);
+            if (section && section.questions[questionIndex]) {
+                const question = section.questions[questionIndex];
+                // Only remove if there's more than one choice
+                if (question.choices.length > 1) {
+                    question.choices.pop();
+                    renderSections();
+                }
+            }
+        }
+
+        function updatePointsDisplay() {
+            const pointsDisplay = document.getElementById('points-display');
+            
+            if (sections.length === 0) {
+                pointsDisplay.innerHTML = '<p class="empty-state">أضف أقساماً لرؤية توزيع النقاط</p>';
+                return;
+            }
+
+            const totalWeight = sections.reduce((sum, section) => sum + section.weight, 0);
+            const pointsData = sections.map(section => {
+                const sectionPoints = (section.weight / totalWeight) * totalPoints;
+                const pointsPerQuestion = section.questions.length > 0 
+                    ? sectionPoints / section.questions.length 
+                    : 0;
+                
+                return {
+                    name: section.name,
+                    weight: section.weight,
+                    questionCount: section.questions.length,
+                    totalPoints: sectionPoints.toFixed(2),
+                    pointsPerQuestion: pointsPerQuestion.toFixed(2)
+                };
+            });
+
+            pointsDisplay.innerHTML = `
+                <table class="points-table">
+                    <thead>
+                        <tr>
+                            <th>القسم</th>
+                            <th>الوزن</th>
+                            <th>عدد الأسئلة</th>
+                            <th>إجمالي النقاط</th>
+                            <th>النقاط لكل سؤال</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${pointsData.map(data => `
+                            <tr>
+                                <td>${data.name}</td>
+                                <td>${data.weight}</td>
+                                <td>${data.questionCount}</td>
+                                <td style="font-weight: 600; color: var(--primary-color);">${data.totalPoints}</td>
+                                <td>${data.pointsPerQuestion}</td>
+                            </tr>
+                        `).join('')}
+                        <tr class="total-row">
+                            <td colspan="3">المجموع</td>
+                            <td style="color: var(--primary-color);">${totalPoints}</td>
+                            <td>-</td>
+                        </tr>
+                    </tbody>
+                </table>
+            `;
+        }
+
+        function saveQuestions() {
+            if (sections.length === 0) {
+                alert('يرجى إضافة قسم واحد على الأقل مع الأسئلة');
+                return;
+            }
+
+            const questions = [];
+            let hasInvalid = false;
+            let errorMsg = '';
+
+            sections.forEach((section, sIdx) => {
+                section.questions.forEach((question, qIdx) => {
+                    // Validate question text
+                    if (!question.text || !question.text.trim()) {
+                        hasInvalid = true;
+                        errorMsg += `القسم ${sIdx + 1}، السؤال ${qIdx + 1}: نص السؤال مفقود.\n`;
+                        return;
+                    }
+                    // Validate choices array
+                    if (!Array.isArray(question.choices) || question.choices.length < 1) {
+                        hasInvalid = true;
+                        errorMsg += `القسم ${sIdx + 1}، السؤال ${qIdx + 1}: يجب أن يحتوي على خيار واحد على الأقل.\n`;
+                        return;
+                    }
+                    // Validate each choice
+                    for (let cIdx = 0; cIdx < question.choices.length; cIdx++) {
+                        const choice = question.choices[cIdx];
+                        if (
+                            typeof choice !== 'object' ||
+                            typeof choice.text !== 'string' ||
+                            choice.text.trim() === '' ||
+                            typeof choice.weight === 'undefined'
+                        ) {
+                            hasInvalid = true;
+                            errorMsg += `القسم ${sIdx + 1}، السؤال ${qIdx + 1}، الخيار ${cIdx + 1}: خيار غير صالح (يجب أن يحتوي على نص ووزن).\n`;
+                            return;
+                        }
+                    }
+                    questions.push({
+                        text: question.text,
+                        choices: question.choices,
+                        section: section.name,
+                        weight: section.weight
+                    });
+                });
+            });
+
+            if (hasInvalid || questions.length === 0) {
+                alert(errorMsg || 'يرجى التأكد من أن جميع الأسئلة تحتوي على نص وخيار واحد على الأقل مع نص ووزن.');
+                return;
+            }
+
+            const bankName = document.getElementById('bank-name').value.trim();
+            if (!bankName) {
+                alert('يرجى إدخال اسم بنك الأسئلة');
+                return;
+            }
+
+            socket.emit('save-questions', {
+                questions,
+                totalPoints: totalPoints,
+                bankName: bankName
+            });
+        }
+
+        // Listen for questions saved event
+        socket.on('questions-saved', function(data) {
+            // Show success message
+            const successMsg = document.createElement('div');
+            successMsg.className = 'success-message';
+            successMsg.innerHTML = `✅ تم حفظ ${data.questions.length} سؤال في البنك بنجاح!`;
+            document.body.appendChild(successMsg);
+            
+            setTimeout(() => {
+                successMsg.remove();
+            }, 3000);
+
+            // Clear form after successful save
+            sections = [];
+            renderSections();
+            document.getElementById('bank-name').value = '';
+        });
+
+        // Listen for error messages
+        socket.on('error-message', function(message) {
+            alert(`خطأ: ${message}`);
+        });
+
+        // Initialize with one section
+        addSection();
+    </script>
+</body>
+</html>

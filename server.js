@@ -1,0 +1,633 @@
+require('dotenv').config();
+const express = require('express');
+const cors = require('cors');
+const { PrismaClient } = require('@prisma/client');
+const { createClient } = require('@supabase/supabase-js');
+const { v4: uuidv4 } = require('uuid');
+const path = require('path');
+
+const prisma = new PrismaClient();
+const app = express();
+
+// Initialize Supabase client
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_KEY
+);
+
+const PORT = process.env.PORT || 3000;
+const judgePIN = process.env.JUDGE_PIN || '1234';
+
+// Middleware
+app.use(cors());
+app.use(express.json());
+app.use(express.static('public'));
+
+// API Routes
+
+// Get initial data for host
+app.get('/api/host/init', async (req, res) => {
+  try {
+    const teams = await prisma.team.findMany({
+      distinct: ['name'],
+      select: { name: true }
+    });
+    const questions = await prisma.question.findMany({
+      distinct: ['text'],
+      select: { id: true, text: true, section: true, weight: true }
+    });
+    const questionBanks = await prisma.questionBank.findMany({
+      include: {
+        questions: {
+          select: { id: true, text: true, section: true, weight: true }
+        }
+      }
+    });
+    
+    res.json({
+      teams: teams.map(t => t.name),
+      questions,
+      questionBanks,
+      sections: [...new Set(questions.map(q => q.section))]
+    });
+  } catch (error) {
+    console.error('Error fetching host data:', error);
+    res.status(500).json({ error: 'Failed to fetch data' });
+  }
+});
+
+// Join as judge
+app.post('/api/judge/join', async (req, res) => {
+  const { pin, name } = req.body;
+  
+  if (!name || name.trim() === '') {
+    return res.status(400).json({ error: 'Name is required' });
+  }
+  
+  if (pin !== judgePIN) {
+    return res.status(401).json({ error: 'Invalid Game PIN' });
+  }
+  
+  try {
+    const judgeToken = uuidv4();
+    
+    const judge = await prisma.judge.upsert({
+      where: { name },
+      create: { 
+        name,
+        judgeToken,
+        isOnline: true
+      },
+      update: { 
+        judgeToken,
+        isOnline: true
+      }
+    });
+    
+    res.json({ 
+      success: true,
+      judge: {
+        id: judge.id,
+        name: judge.name,
+        judgeToken: judge.judgeToken
+      }
+    });
+  } catch (error) {
+    console.error('Error creating judge:', error);
+    res.status(500).json({ error: 'Failed to join session' });
+  }
+});
+
+// Create session and set teams
+app.post('/api/session/create', async (req, res) => {
+  const { teamNames } = req.body;
+  
+  if (!teamNames || teamNames.length === 0) {
+    return res.status(400).json({ error: 'Please select at least one team' });
+  }
+  
+  try {
+    const sessionId = uuidv4();
+    const hostToken = uuidv4();
+    
+    const session = await prisma.session.create({
+      data: {
+        name: `Session ${sessionId}`,
+        sessionId: sessionId,
+        hostToken: hostToken,
+        currentTeamIndex: 0,
+        teams: JSON.stringify(teamNames),
+        answersByTeam: JSON.stringify({}),
+        status: 'waiting'
+      }
+    });
+    
+    // Link selected teams to the session
+    const allTeams = await prisma.team.findMany({
+      where: { name: { in: teamNames } }
+    });
+    
+    for (const team of allTeams) {
+      await prisma.sessionTeam.create({
+        data: {
+          session: { connect: { id: session.id } },
+          team: { connect: { id: team.id } }
+        }
+      });
+    }
+    
+    // Create session event
+    await prisma.sessionEvent.create({
+      data: {
+        sessionId: session.id,
+        eventType: 'session_created',
+        eventData: { teams: teamNames }
+      }
+    });
+    
+    res.json({
+      sessionId,
+      hostToken,
+      teams: teamNames
+    });
+  } catch (error) {
+    console.error('Error creating session:', error);
+    res.status(500).json({ error: 'Failed to create session' });
+  }
+});
+
+// Start questions
+app.post('/api/session/:sessionId/start-questions', async (req, res) => {
+  const { sessionId } = req.params;
+  const { questionIds, hostToken } = req.body;
+  
+  try {
+    // Verify session and host token
+    const session = await prisma.session.findFirst({
+      where: { sessionId, hostToken }
+    });
+    
+    if (!session) {
+      return res.status(401).json({ error: 'Invalid session or host token' });
+    }
+    
+    // Link questions to session
+    const questionIdInts = questionIds.map(q => parseInt(q.id));
+    const allQuestions = await prisma.question.findMany({
+      where: { id: { in: questionIdInts } }
+    });
+    
+    for (const question of allQuestions) {
+      const exists = await prisma.sessionQuestion.findFirst({
+        where: {
+          sessionId: session.id,
+          questionId: question.id
+        }
+      });
+      if (!exists) {
+        await prisma.sessionQuestion.create({
+          data: {
+            session: { connect: { id: session.id } },
+            question: { connect: { id: question.id } }
+          }
+        });
+      }
+    }
+    
+    // Get current team
+    const teams = JSON.parse(session.teams);
+    const currentTeam = await prisma.team.findFirst({
+      where: { name: teams[session.currentTeamIndex] }
+    });
+    
+    // Update session with current questions
+    await prisma.session.update({
+      where: { id: session.id },
+      data: {
+        currentQuestions: JSON.stringify(allQuestions),
+        currentTeamId: currentTeam?.id || null,
+        status: 'active'
+      }
+    });
+    
+    // Create event
+    await prisma.sessionEvent.create({
+      data: {
+        sessionId: session.id,
+        eventType: 'questions_started',
+        eventData: {
+          questions: allQuestions,
+          currentTeam: teams[session.currentTeamIndex],
+          teamId: currentTeam?.id
+        }
+      }
+    });
+    
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error starting questions:', error);
+    res.status(500).json({ error: 'Failed to start questions' });
+  }
+});
+
+// Change team
+app.post('/api/session/:sessionId/change-team', async (req, res) => {
+  const { sessionId } = req.params;
+  const { direction, hostToken } = req.body;
+  
+  try {
+    const session = await prisma.session.findFirst({
+      where: { sessionId, hostToken }
+    });
+    
+    if (!session) {
+      return res.status(401).json({ error: 'Invalid session or host token' });
+    }
+    
+    const teams = JSON.parse(session.teams);
+    let newIndex = session.currentTeamIndex;
+    
+    if (direction === 'next' && newIndex < teams.length - 1) {
+      newIndex++;
+    } else if (direction === 'previous' && newIndex > 0) {
+      newIndex--;
+    }
+    
+    await prisma.session.update({
+      where: { id: session.id },
+      data: { currentTeamIndex: newIndex }
+    });
+    
+    // Create event
+    await prisma.sessionEvent.create({
+      data: {
+        sessionId: session.id,
+        eventType: 'team_changed',
+        eventData: {
+          currentTeam: teams[newIndex],
+          currentTeamIndex: newIndex
+        }
+      }
+    });
+    
+    res.json({ 
+      success: true,
+      currentTeam: teams[newIndex],
+      currentTeamIndex: newIndex
+    });
+  } catch (error) {
+    console.error('Error changing team:', error);
+    res.status(500).json({ error: 'Failed to change team' });
+  }
+});
+
+// Submit answer
+app.post('/api/answer/submit', async (req, res) => {
+  const { sessionId, judgeToken, answer, questionIndex } = req.body;
+  
+  try {
+    // Verify judge
+    const judge = await prisma.judge.findFirst({
+      where: { judgeToken }
+    });
+    
+    if (!judge) {
+      return res.status(401).json({ error: 'Invalid judge token' });
+    }
+    
+    // Get session
+    const session = await prisma.session.findFirst({
+      where: { sessionId }
+    });
+    
+    if (!session) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+    
+    // Get current team
+    const teams = JSON.parse(session.teams);
+    const currentTeam = await prisma.team.findFirst({
+      where: { name: teams[session.currentTeamIndex] }
+    });
+    
+    if (!currentTeam) {
+      return res.status(404).json({ error: 'Team not found' });
+    }
+    
+    // Get question
+    const question = await prisma.question.findUnique({
+      where: { id: questionIndex }
+    });
+    
+    if (!question) {
+      return res.status(404).json({ error: 'Question not found' });
+    }
+    
+    // Calculate points
+    const answerText = typeof answer === 'object' ? answer.text : answer;
+    const points = calculateAnswerPoints(question, answer);
+    
+    // Save answer
+    const savedAnswer = await prisma.answer.create({
+      data: {
+        answer: answerText,
+        points: points,
+        question: { connect: { id: questionIndex } },
+        team: { connect: { id: currentTeam.id } },
+        judge: { connect: { id: judge.id } },
+        session: { connect: { id: session.id } }
+      }
+    });
+    
+    // Create event
+    await prisma.sessionEvent.create({
+      data: {
+        sessionId: session.id,
+        eventType: 'answer_submitted',
+        eventData: {
+          judgeName: judge.name,
+          teamName: currentTeam.name,
+          answer: answerText,
+          points: points
+        }
+      }
+    });
+    
+    res.json({ success: true, answerId: savedAnswer.id });
+  } catch (error) {
+    console.error('Error submitting answer:', error);
+    res.status(500).json({ error: 'Failed to submit answer' });
+  }
+});
+
+// Submit final answers
+app.post('/api/answer/submit-final', async (req, res) => {
+  const { sessionId, judgeToken, teamId, answers } = req.body;
+  
+  try {
+    const judge = await prisma.judge.findFirst({
+      where: { judgeToken }
+    });
+    
+    if (!judge) {
+      return res.status(401).json({ error: 'Invalid judge token' });
+    }
+    
+    const session = await prisma.session.findFirst({
+      where: { sessionId }
+    });
+    
+    if (!session) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+    
+    // Save final answers
+    await prisma.finalAnswer.upsert({
+      where: {
+        sessionId_teamId_judgeId: {
+          sessionId: session.id,
+          teamId: parseInt(teamId),
+          judgeId: judge.id
+        }
+      },
+      create: {
+        sessionId: session.id,
+        teamId: parseInt(teamId),
+        judgeId: judge.id,
+        answers: JSON.stringify(answers)
+      },
+      update: {
+        answers: JSON.stringify(answers)
+      }
+    });
+    
+    // Calculate and update team results
+    await updateTeamResults(session.id, parseInt(teamId));
+    
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error submitting final answers:', error);
+    res.status(500).json({ error: 'Failed to submit final answers' });
+  }
+});
+
+// Get session state
+app.get('/api/session/:sessionId/state', async (req, res) => {
+  const { sessionId } = req.params;
+  
+  try {
+    const session = await prisma.session.findFirst({
+      where: { sessionId },
+      include: {
+        sessionTeams: {
+          include: { team: true }
+        },
+        sessionQuestions: {
+          include: { question: true }
+        }
+      }
+    });
+    
+    if (!session) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+    
+    const teams = JSON.parse(session.teams || '[]');
+    const currentQuestions = session.currentQuestions ? JSON.parse(session.currentQuestions) : [];
+    
+    res.json({
+      session: {
+        id: session.id,
+        sessionId: session.sessionId,
+        status: session.status,
+        currentTeamIndex: session.currentTeamIndex,
+        currentTeam: teams[session.currentTeamIndex],
+        teams: teams,
+        currentQuestions: currentQuestions,
+        totalPoints: session.totalPoints
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching session state:', error);
+    res.status(500).json({ error: 'Failed to fetch session state' });
+  }
+});
+
+// Get leaderboard
+app.get('/api/session/:sessionId/leaderboard', async (req, res) => {
+  const { sessionId } = req.params;
+  
+  try {
+    const session = await prisma.session.findFirst({
+      where: { sessionId }
+    });
+    
+    if (!session) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+    
+    const results = await prisma.sessionResult.findMany({
+      where: { sessionId: session.id },
+      include: { team: true }
+    });
+    
+    const leaderboard = results.map(result => {
+      const details = JSON.parse(result.details);
+      const answers = details.answers || [];
+      
+      const totalPoints = answers.reduce((sum, answer) => {
+        return sum + (parseFloat(answer.points) || 0);
+      }, 0);
+      
+      return {
+        teamName: result.team.name,
+        totalPoints: Math.round(totalPoints * 100) / 100
+      };
+    });
+    
+    leaderboard.sort((a, b) => b.totalPoints - a.totalPoints);
+    
+    res.json({ leaderboard });
+  } catch (error) {
+    console.error('Error fetching leaderboard:', error);
+    res.status(500).json({ error: 'Failed to fetch leaderboard' });
+  }
+});
+
+// Save questions
+app.post('/api/questions/save', async (req, res) => {
+  const { questions, totalPoints, bankName } = req.body;
+  
+  try {
+    if (!bankName || !bankName.trim()) {
+      return res.status(400).json({ error: 'A question bank name is required' });
+    }
+    
+    // Create or update question bank
+    const bank = await prisma.questionBank.upsert({
+      where: { name: bankName },
+      create: { name: bankName },
+      update: {}
+    });
+    
+    // Validate and create questions
+    const createdQuestions = await prisma.$transaction(
+      questions.map(q => prisma.question.create({
+        data: {
+          text: q.text,
+          choices: q.choices,
+          ...(q.correct ? { correct: q.correct } : {}),
+          section: q.section,
+          weight: q.weight,
+          bank: { connect: { id: bank.id } }
+        }
+      }))
+    );
+    
+    res.json({
+      success: true,
+      questions: createdQuestions,
+      bankId: bank.id
+    });
+  } catch (error) {
+    console.error('Error saving questions:', error);
+    res.status(500).json({ error: 'Failed to save questions' });
+  }
+});
+
+// Utility functions
+function calculateAnswerPoints(question, answerText) {
+  if (!question || !question.choices) return 0;
+  
+  const selectedOption = typeof answerText === 'object' 
+    ? question.choices.find(opt => opt.text === answerText.text)
+    : question.choices.find(opt => opt.text === answerText);
+  
+  if (!selectedOption) return 0;
+  
+  const maxOptionWeight = Math.max(...question.choices.map(o => o.weight || 0));
+  return (selectedOption.weight / maxOptionWeight) * (question.weight || 1);
+}
+
+async function updateTeamResults(sessionId, teamId) {
+  try {
+    const session = await prisma.session.findUnique({
+      where: { id: sessionId }
+    });
+    
+    const sessionQuestions = await prisma.sessionQuestion.findMany({
+      where: { sessionId },
+      include: { question: true }
+    });
+    const questions = sessionQuestions.map(sq => sq.question);
+    
+    const allFinalAnswers = await prisma.finalAnswer.findMany({
+      where: {
+        sessionId,
+        teamId
+      }
+    });
+    
+    let totalPoints = 0;
+    const allDetailedAnswers = [];
+    
+    for (const finalAnswer of allFinalAnswers) {
+      const judge = await prisma.judge.findUnique({ where: { id: finalAnswer.judgeId } });
+      const answers = JSON.parse(finalAnswer.answers);
+      
+      for (const answer of answers) {
+        const question = questions.find(q => q.id === answer.questionIndex);
+        if (question) {
+          const points = calculateAnswerPoints(question, answer.answer);
+          totalPoints += points;
+          
+          allDetailedAnswers.push({
+            questionText: question.text,
+            questionWeight: question.weight || 1,
+            judgeName: judge?.name || 'Unknown',
+            answer: answer.answer,
+            points: points
+          });
+        }
+      }
+    }
+    
+    totalPoints = Math.round(totalPoints * 100) / 100;
+    
+    await prisma.sessionResult.upsert({
+      where: {
+        sessionId_teamId: {
+          sessionId,
+          teamId
+        }
+      },
+      create: {
+        sessionId,
+        teamId,
+        totalPoints,
+        details: JSON.stringify({ answers: allDetailedAnswers })
+      },
+      update: {
+        totalPoints,
+        details: JSON.stringify({ answers: allDetailedAnswers })
+      }
+    });
+    
+    // Create leaderboard update event
+    await prisma.sessionEvent.create({
+      data: {
+        sessionId,
+        eventType: 'leaderboard_updated',
+        eventData: { teamId, totalPoints }
+      }
+    });
+  } catch (error) {
+    console.error('Error updating team results:', error);
+  }
+}
+
+// Start server
+app.listen(PORT, () => {
+  console.log(`Server running at http://localhost:${PORT}`);
+  console.log('Environment:', process.env.NODE_ENV);
+});

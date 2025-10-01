@@ -1,0 +1,158 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Session {
+  id        Int      @id @default(autoincrement())
+  name      String
+  sessionId String   @unique
+  hostToken String?  @unique
+  currentTeamIndex Int? @default(0)
+  teams     Json?
+  answersByTeam Json?
+  currentQuestions Json?
+  currentTeamId Int?
+  status    String   @default("waiting") // waiting, active, ended
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  sessionTeams SessionTeam[] @relation("SessionToSessionTeam")
+  sessionQuestions SessionQuestion[] @relation("SessionToSessionQuestion")
+  answers   Answer[]
+  results   SessionResult[]
+  finalAnswers FinalAnswer[]
+  totalPoints Int?   @default(100)
+  events    SessionEvent[]
+}
+
+model Team {
+  id        Int      @id @default(autoincrement())
+  name      String
+  sessionTeams SessionTeam[]
+  answers   Answer[]
+  results   SessionResult[]
+  finalAnswers FinalAnswer[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model QuestionBank {
+  id        Int       @id @default(autoincrement())
+  name      String    @unique
+  questions Question[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Question {
+  id        Int      @id @default(autoincrement())
+  text      String
+  choices   Json
+  correct   String?
+  section   String
+  weight    Float    @default(1.0)
+  sessionQuestions SessionQuestion[]
+  bank      QuestionBank? @relation(fields: [bankId], references: [id])
+  bankId    Int?
+  answers   Answer[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model SessionTeam {
+  id        Int      @id @default(autoincrement())
+  session   Session  @relation("SessionToSessionTeam", fields: [sessionId], references: [id])
+  sessionId Int
+  team      Team     @relation(fields: [teamId], references: [id])
+  teamId    Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([sessionId, teamId])
+}
+
+model SessionQuestion {
+  id        Int      @id @default(autoincrement())
+  session   Session  @relation("SessionToSessionQuestion", fields: [sessionId], references: [id])
+  sessionId Int
+  question  Question @relation(fields: [questionId], references: [id])
+  questionId Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([sessionId, questionId])
+}
+
+model Judge {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  judgeToken String? @unique
+  sessionId  Int?
+  isOnline  Boolean  @default(false)
+  answers   Answer[]
+  finalAnswers FinalAnswer[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Answer {
+  id         Int      @id @default(autoincrement())
+  answer     String
+  points     Float?
+  question   Question @relation(fields: [questionId], references: [id])
+  questionId Int
+  team       Team     @relation(fields: [teamId], references: [id])
+  teamId     Int
+  judge      Judge    @relation(fields: [judgeId], references: [id])
+  judgeId    Int
+  session    Session  @relation(fields: [sessionId], references: [id])
+  sessionId  Int
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model SessionResult {
+  id        Int      @id @default(autoincrement())
+  session   Session  @relation(fields: [sessionId], references: [id])
+  sessionId Int
+  team      Team     @relation(fields: [teamId], references: [id])
+  teamId    Int
+  totalPoints Float
+  details   Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([sessionId, teamId])
+}
+
+model FinalAnswer {
+  id        Int      @id @default(autoincrement())
+  session   Session  @relation(fields: [sessionId], references: [id])
+  sessionId Int
+  team      Team     @relation(fields: [teamId], references: [id])
+  teamId    Int
+  judge     Judge    @relation(fields: [judgeId], references: [id])
+  judgeId   Int
+  answers   Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([sessionId, teamId, judgeId])
+}
+
+// New model to track real-time events
+model SessionEvent {
+  id        Int      @id @default(autoincrement())
+  session   Session  @relation(fields: [sessionId], references: [id])
+  sessionId Int
+  eventType String   // team_changed, question_started, session_started, etc.
+  eventData Json?
+  createdAt DateTime @default(now())
+}

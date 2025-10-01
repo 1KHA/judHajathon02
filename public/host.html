@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>إدارة التحكيم</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --primary-color: #2563eb;
+      --primary-hover: #1d4ed8;
+      --primary-light: #dbeafe;
+      --secondary-color: #64748b;
+      --secondary-light: #f1f5f9;
+      --danger-color: #ef4444;
+      --success-color: #10b981;
+      --warning-color: #f59e0b;
+      --text-primary: #1e293b;
+      --text-secondary: #64748b;
+      --border-color: #e2e8f0;
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+      --radius: 8px;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, system-ui, -apple-system, sans-serif;
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      min-height: 100vh;
+      color: var(--text-primary);
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    /* Header */
+    .header {
+      background: white;
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: var(--shadow-md);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .header h1 {
+      color: var(--primary-color);
+      font-size: 28px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .header h1::before {
+      content: "🎯";
+      font-size: 32px;
+    }
+
+    .session-badge {
+      background: var(--primary-light);
+      color: var(--primary-color);
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-weight: 600;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .session-badge::before {
+      content: "●";
+      color: var(--success-color);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    /* Grid Layout */
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    /* Cards */
+    .card {
+      background: white;
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: var(--shadow-md);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid var(--border-color);
+    }
+
+    .card-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-icon {
+      width: 24px;
+      height: 24px;
+      background: var(--primary-light);
+      color: var(--primary-color);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+    }
+
+    /* Forms and Inputs */
+    select, input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 2px solid var(--border-color);
+      border-radius: 6px;
+      font-size: 14px;
+      transition: all 0.2s;
+      background: white;
+      color: var(--text-primary);
+    }
+
+    select:focus, input:focus {
+      outline: none;
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 3px var(--primary-light);
+    }
+
+    select[multiple] {
+      min-height: 120px;
+      resize: vertical;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      font-size: 14px;
+    }
+
+    /* Buttons */
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+    }
+
+    .btn-primary {
+      background: var(--primary-color);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-hover);
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .btn-secondary {
+      background: var(--secondary-color);
+      color: white;
+    }
+
+    .btn-secondary:hover {
+      background: #475569;
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .btn-success {
+      background: var(--success-color);
+      color: white;
+    }
+
+    .btn-success:hover {
+      background: #059669;
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .btn-danger {
+      background: var(--danger-color);
+      color: white;
+    }
+
+    .btn-danger:hover {
+      background: #dc2626;
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    /* Team Controls */
+    .team-display {
+      background: var(--primary-light);
+      padding: 16px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      text-align: center;
+    }
+
+    .team-display h3 {
+      color: var(--primary-color);
+      font-size: 16px;
+      margin-bottom: 8px;
+    }
+
+    .team-display .team-name {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    /* Judge List */
+    .judge-list {
+      list-style: none;
+      padding: 0;
+    }
+
+    .judge-list li {
+      background: var(--secondary-light);
+      padding: 10px 14px;
+      margin-bottom: 8px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: all 0.2s;
+    }
+
+    .judge-list li:hover {
+      background: var(--primary-light);
+      transform: translateX(-4px);
+    }
+
+    .judge-list li::before {
+      content: "👤";
+      font-size: 16px;
+    }
+
+    .judge-list li.online::before {
+      content: "🟢";
+      font-size: 12px;
+    }
+
+    /* Answers Section */
+    .answers-container {
+      max-height: 400px;
+      overflow-y: auto;
+      padding: 4px;
+    }
+
+    .answer-item {
+      background: var(--secondary-light);
+      padding: 14px;
+      margin-bottom: 12px;
+      border-radius: 6px;
+      border-right: 4px solid var(--primary-color);
+    }
+
+    .answer-item strong {
+      color: var(--primary-color);
+      display: block;
+      margin-bottom: 8px;
+      font-size: 16px;
+    }
+
+    .answer-item ul {
+      list-style: none;
+      padding-right: 20px;
+    }
+
+    .answer-item li {
+      padding: 4px 0;
+      color: var(--text-secondary);
+    }
+
+    /* Leaderboard */
+    .leaderboard-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      margin-top: 12px;
+    }
+
+    .leaderboard-table thead {
+      background: var(--primary-color);
+      color: white;
+    }
+
+    .leaderboard-table th {
+      padding: 12px;
+      text-align: right;
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .leaderboard-table tbody tr {
+      transition: all 0.2s;
+    }
+
+    .leaderboard-table tbody tr:hover {
+      background: var(--primary-light);
+    }
+
+    .leaderboard-table td {
+      padding: 12px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .leaderboard-table tbody tr:first-child td:first-child::before {
+      content: "🥇 ";
+      font-size: 18px;
+    }
+
+    .leaderboard-table tbody tr:nth-child(2) td:first-child::before {
+      content: "🥈 ";
+      font-size: 18px;
+    }
+
+    .leaderboard-table tbody tr:nth-child(3) td:first-child::before {
+      content: "🥉 ";
+      font-size: 18px;
+    }
+
+    /* Quick Actions */
+    .quick-actions {
+      background: white;
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-top: 20px;
+      box-shadow: var(--shadow-md);
+    }
+
+    .quick-actions h3 {
+      color: var(--text-primary);
+      margin-bottom: 16px;
+      font-size: 18px;
+    }
+
+    .action-links {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    /* Scrollbar Styling */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: var(--secondary-light);
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--secondary-color);
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--primary-color);
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+      .container {
+        padding: 12px;
+      }
+
+      .dashboard-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .header {
+        flex-direction: column;
+        gap: 12px;
+        text-align: center;
+      }
+
+      .btn-group {
+        flex-direction: column;
+      }
+
+      .action-links {
+        flex-direction: column;
+      }
+    }
+
+    /* Loading State */
+    .loading {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid var(--primary-light);
+      border-top-color: var(--primary-color);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Empty State */
+    .empty-state {
+      text-align: center;
+      padding: 40px;
+      color: var(--text-secondary);
+    }
+
+    .empty-state::before {
+      content: "📋";
+      font-size: 48px;
+      display: block;
+      margin-bottom: 16px;
+      opacity: 0.5;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>إدارة التحكيم</h1>
+      <div class="session-badge">
+        <span>معرف الجلسة:</span>
+        <span id="sessionId">لم تبدأ</span>
+      </div>
+    </div>
+
+    <div class="dashboard-grid">
+      <!-- Teams Card -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <div class="card-icon">👥</div>
+            <span>إدارة الفرق</span>
+          </div>
+        </div>
+        <div>
+          <label for="teamSelect">اختر الفرق المشاركة:</label>
+          <select id="teamSelect" multiple>
+            <!-- Teams will be populated from database -->
+          </select>
+          <button class="btn btn-primary" onclick="setTeams()" style="width: 100%; margin-top: 12px;">
+            <span>✓</span>
+            تعيين الفرق المحددة
+          </button>
+        </div>
+        
+        <div class="team-display">
+          <h3>الفريق الحالي</h3>
+          <div class="team-name" id="currentTeam">لا يوجد</div>
+        </div>
+        
+        <div class="btn-group">
+          <button class="btn btn-secondary" onclick="previousTeam()">
+            <span>◀</span>
+            السابق
+          </button>
+          <button class="btn btn-secondary" onclick="nextTeam()">
+            <span>▶</span>
+            التالي
+          </button>
+          <button class="btn btn-danger" onclick="endSession()">
+            <span>✕</span>
+            إنهاء
+          </button>
+        </div>
+      </div>
+
+      <!-- Questions Card -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <div class="card-icon">❓</div>
+            <span>الأسئلة</span>
+          </div>
+        </div>
+        <div>
+          <label for="bankSelect">بنك الأسئلة:</label>
+          <select id="bankSelect">
+            <option value="">جميع الأسئلة</option>
+          </select>
+          
+          <label for="questionSelect" style="margin-top: 12px;">اختر الأسئلة:</label>
+          <select id="questionSelect" multiple>
+            <!-- Questions will be populated from database -->
+          </select>
+          
+          <button class="btn btn-success" onclick="sendQuestion()" style="width: 100%; margin-top: 12px;">
+            <span>📤</span>
+            إرسال الأسئلة المحددة
+          </button>
+        </div>
+      </div>
+
+      <!-- Judges Card -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <div class="card-icon">⚖️</div>
+            <span>المحكمون المتصلون</span>
+          </div>
+        </div>
+        <ul id="judges" class="judge-list">
+          <li class="empty-state">لا يوجد محكمون متصلون</li>
+        </ul>
+        <button id="startSessionBtn" class="btn btn-primary" disabled style="width: 100%; margin-top: 12px;">
+          <span>▶</span>
+          بدء الجلسة
+        </button>
+      </div>
+
+      <!-- Answers Card -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <div class="card-icon">📝</div>
+            <span>الإجابات</span>
+          </div>
+        </div>
+        <div class="answers-container" id="answersList">
+          <div class="empty-state">لم يتم استلام إجابات بعد</div>
+        </div>
+      </div>
+
+      <!-- Leaderboard Card -->
+      <div class="card" style="grid-column: span 2;">
+        <div class="card-header">
+          <div class="card-title">
+            <div class="card-icon">🏆</div>
+            <span>لوحة المتصدرين</span>
+          </div>
+        </div>
+        <table class="leaderboard-table">
+          <thead>
+            <tr>
+              <th>الفريق</th>
+              <th style="text-align: left;">إجمالي النقاط</th>
+            </tr>
+          </thead>
+          <tbody id="leaderboardTable">
+            <tr>
+              <td colspan="2" class="empty-state">لا توجد نتائج بعد</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="quick-actions">
+      <h3>الإجراءات السريعة</h3>
+      <div class="action-links">
+        <a href="/add_questions.html" class="btn btn-success">
+          <span>➕</span>
+          إضافة/تعديل الأسئلة
+        </a>
+        <a href="/results.html" class="btn btn-primary">
+          <span>📊</span>
+          عرض النتائج
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Supabase Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    // Configure Supabase credentials
+    window.SUPABASE_URL = 'YOUR_SUPABASE_URL';
+    window.SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+  </script>
+  <script src="/supabase-client.js"></script>
+  
+  <script>
+    let teams = [];
+    let currentTeam = 'لا يوجد';
+    let currentSessionId = null;
+    let hostToken = null;
+    let judges = [];
+    let answersByTeam = {};
+
+    // Check for existing session on page load
+    const savedSessionId = localStorage.getItem('hostSessionId');
+    const savedHostToken = localStorage.getItem('hostToken');
+
+    if (savedSessionId && savedHostToken) {
+      // Attempt to rejoin existing session
+      rejoinSession(savedSessionId, savedHostToken);
+    } else {
+      // Load initial data
+      loadInitialData();
+    }
+
+    async function loadInitialData() {
+      try {
+        const data = await api.getHostInitData();
+        console.log('Received host data:', data);
+        
+        // Populate teams dropdown
+        const teamSelect = document.getElementById('teamSelect');
+        teamSelect.innerHTML = '';
+        data.teams.forEach(team => {
+          const option = document.createElement('option');
+          option.value = team;
+          option.textContent = team;
+          teamSelect.appendChild(option);
+        });
+
+        // Populate question banks dropdown
+        const bankSelect = document.getElementById('bankSelect');
+        bankSelect.innerHTML = '<option value="">جميع الأسئلة</option>';
+        data.questionBanks.forEach(bank => {
+          const option = document.createElement('option');
+          option.value = bank.id;
+          option.textContent = bank.name;
+          bankSelect.appendChild(option);
+        });
+
+        // Populate questions dropdown
+        const questionSelect = document.getElementById('questionSelect');
+        questionSelect.innerHTML = '';
+        
+        // Show all questions by default
+        data.questions.forEach(question => {
+          const option = document.createElement('option');
+          option.value = question.id;
+          option.textContent = question.text;
+          questionSelect.appendChild(option);
+        });
+
+        // Handle bank selection
+        bankSelect.addEventListener('change', function() {
+          questionSelect.innerHTML = '';
+          const bankId = this.value;
+          if (bankId) {
+            const bank = data.questionBanks.find(b => b.id == bankId);
+            if (bank && bank.questions) {
+              bank.questions.forEach(question => {
+                const option = document.createElement('option');
+                option.value = question.id;
+                option.textContent = question.text;
+                questionSelect.appendChild(option);
+              });
+            }
+          } else {
+            // Show all questions when no bank selected
+            data.questions.forEach(question => {
+              const option = document.createElement('option');
+              option.value = question.id;
+              option.textContent = question.text;
+              questionSelect.appendChild(option);
+            });
+          }
+        });
+      } catch (error) {
+        console.error('Error loading initial data:', error);
+        alert('خطأ في تحميل البيانات');
+      }
+    }
+
+    async function rejoinSession(sessionId, token) {
+      try {
+        const state = await api.getSessionState(sessionId);
+        if (state.session) {
+          currentSessionId = sessionId;
+          hostToken = token;
+          teams = state.session.teams;
+          currentTeam = state.session.currentTeam;
+          
+          document.getElementById('currentTeam').textContent = currentTeam;
+          document.getElementById('sessionId').textContent = sessionId;
+          
+          // Subscribe to real-time updates
+          subscribeToSession(sessionId);
+          
+          // Load initial data
+          loadInitialData();
+          
+          // Update leaderboard
+          updateLeaderboard();
+          
+          console.log('Host successfully rejoined session:', sessionId);
+          alert(`تم إعادة الانضمام للجلسة: ${sessionId}`);
+        }
+      } catch (error) {
+        console.log('Rejoin failed:', error);
+        // Clear invalid tokens
+        localStorage.removeItem('hostSessionId');
+        localStorage.removeItem('hostToken');
+        
+        // Load initial data
+        loadInitialData();
+        alert('انتهت صلاحية الجلسة السابقة. البدء من جديد.');
+      }
+    }
+
+    async function setTeams() {
+      const selectedTeams = Array.from(document.querySelectorAll('#teamSelect option:checked'))
+        .map(opt => opt.value);
+      
+      if (selectedTeams.length === 0) {
+        alert('يرجى اختيار فريق واحد على الأقل');
+        return;
+      }
+      
+      try {
+        const data = await api.createSession(selectedTeams);
+        
+        // Store session info
+        currentSessionId = data.sessionId;
+        hostToken = data.hostToken;
+        teams = data.teams;
+        currentTeam = teams[0] || 'لا يوجد';
+        
+        localStorage.setItem('hostSessionId', data.sessionId);
+        localStorage.setItem('hostToken', data.hostToken);
+        
+        document.getElementById('sessionId').textContent = data.sessionId;
+        document.getElementById('currentTeam').textContent = currentTeam;
+        
+        // Subscribe to real-time updates
+        subscribeToSession(data.sessionId);
+        
+        console.log('Session created:', data.sessionId);
+      } catch (error) {
+        console.error('Error creating session:', error);
+        alert('خطأ في إنشاء الجلسة');
+      }
+    }
+
+    async function previousTeam() {
+      if (!currentSessionId || !hostToken) {
+        alert('يرجى إنشاء جلسة أولاً');
+        return;
+      }
+      
+      try {
+        const result = await api.changeTeam(currentSessionId, 'previous', hostToken);
+        currentTeam = result.currentTeam;
+        document.getElementById('currentTeam').textContent = currentTeam;
+      } catch (error) {
+        console.error('Error changing team:', error);
+        alert('خطأ في تغيير الفريق');
+      }
+    }
+
+    async function nextTeam() {
+      if (!currentSessionId || !hostToken) {
+        alert('يرجى إنشاء جلسة أولاً');
+        return;
+      }
+      
+      try {
+        const result = await api.changeTeam(currentSessionId, 'next', hostToken);
+        currentTeam = result.currentTeam;
+        document.getElementById('currentTeam').textContent = currentTeam;
+      } catch (error) {
+        console.error('Error changing team:', error);
+        alert('خطأ في تغيير الفريق');
+      }
+    }
+
+    async function sendQuestion() {
+      if (!currentSessionId || !hostToken) {
+        alert('يرجى إنشاء جلسة أولاً');
+        return;
+      }
+      
+      const selectedQuestions = Array.from(document.querySelectorAll('#questionSelect option:checked'))
+        .map(opt => ({
+          id: opt.value,
+          text: opt.textContent
+        }));
+      
+      if (selectedQuestions.length === 0) {
+        alert('يرجى اختيار سؤال واحد على الأقل');
+        return;
+      }
+      
+      try {
+        await api.startQuestions(currentSessionId, selectedQuestions, hostToken);
+        console.log('Questions sent successfully');
+      } catch (error) {
+        console.error('Error sending questions:', error);
+        alert('خطأ في إرسال الأسئلة');
+      }
+    }
+
+    function endSession() {
+      if (!currentSessionId) {
+        alert('لا توجد جلسة نشطة');
+        return;
+      }
+      
+      if (confirm('هل أنت متأكد من إنهاء الجلسة؟')) {
+        // Clear session data
+        localStorage.removeItem('hostSessionId');
+        localStorage.removeItem('hostToken');
+        
+        // Unsubscribe from real-time updates
+        window.realtimeManager.unsubscribeAll();
+        
+        // Reset UI
+        currentSessionId = null;
+        hostToken = null;
+        teams = [];
+        currentTeam = 'لا يوجد';
+        answersByTeam = {};
+        
+        document.getElementById('sessionId').textContent = 'لم تبدأ';
+        document.getElementById('currentTeam').textContent = 'لا يوجد';
+        document.getElementById('answersList').innerHTML = '<div class="empty-state">لم يتم استلام إجابات بعد</div>';
+        document.querySelector('#leaderboardTable').innerHTML = '<tr><td colspan="2" class="empty-state">لا توجد نتائج بعد</td></tr>';
+        
+        // Clear selections
+        const teamSelect = document.getElementById('teamSelect');
+        Array.from(teamSelect.options).forEach(option => option.selected = false);
+        
+        const questionSelect = document.getElementById('questionSelect');
+        Array.from(questionSelect.options).forEach(option => option.selected = false);
+        
+        alert('تم إنهاء الجلسة');
+      }
+    }
+
+    function subscribeToSession(sessionId) {
+      // Subscribe to session events
+      window.realtimeManager.subscribeToSession(sessionId, {
+        onQuestionsStarted: (data) => {
+          console.log('Questions started:', data);
+        },
+        onTeamChanged: (data) => {
+          currentTeam = data.currentTeam;
+          document.getElementById('currentTeam').textContent = currentTeam;
+          console.log('Team changed to:', currentTeam);
+        },
+        onAnswerSubmitted: (data) => {
+          // Update answers display
+          if (!answersByTeam[data.teamName]) {
+            answersByTeam[data.teamName] = [];
+          }
+          answersByTeam[data.teamName].push({
+            player: data.judgeName,
+            answer: data.answer,
+            points: data.points
+          });
+          updateAnswersDisplay();
+        },
+        onLeaderboardUpdated: (data) => {
+          updateLeaderboard();
+        }
+      });
+
+      // Subscribe to judge updates
+      window.realtimeManager.subscribeToJudges(sessionId, (payload) => {
+        if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+          updateJudgesList();
+        }
+      });
+    }
+
+    function updateAnswersDisplay() {
+      const answersList = document.getElementById('answersList');
+      if (Object.keys(answersByTeam).length === 0) {
+        answersList.innerHTML = '<div class="empty-state">لم يتم استلام إجابات بعد</div>';
+      } else {
+        answersList.innerHTML = Object.entries(answersByTeam).map(([team, teamAnswers]) => {
+          const answersHtml = teamAnswers.map(a => {
+            return `<li>${a.player || 'غير معروف'}: ${a.answer}</li>`;
+          }).join('');
+          
+          return `
+            <div class="answer-item">
+              <strong>${team}</strong>
+              <ul>${answersHtml}</ul>
+            </div>
+          `;
+        }).join('');
+      }
+    }
+
+    async function updateJudgesList() {
+      // This would need an API endpoint to get judges for the session
+      // For now, we'll just update the UI based on events
+      checkSessionReady();
+    }
+
+    async function updateLeaderboard() {
+      if (!currentSessionId) return;
+      
+      try {
+        const data = await api.getLeaderboard(currentSessionId);
+        const tableBody = document.querySelector('#leaderboardTable');
+        
+        if (data.leaderboard.length === 0) {
+          tableBody.innerHTML = '<tr><td colspan="2" class="empty-state">لا توجد نتائج بعد</td></tr>';
+        } else {
+          tableBody.innerHTML = data.leaderboard.map(team => `
+            <tr>
+              <td>${team.teamName}</td>
+              <td style="text-align: left; font-weight: 600; color: var(--primary-color);">${team.totalPoints.toFixed(2)}</td>
+            </tr>
+          `).join('');
+        }
+      } catch (error) {
+        console.error('Error updating leaderboard:', error);
+      }
+    }
+
+    // Enable start session button when ready
+    function checkSessionReady() {
+      const hasTeams = document.querySelectorAll('#teamSelect option:checked').length > 0;
+      const hasQuestions = document.querySelectorAll('#questionSelect option:checked').length > 0;
+      const hasJudges = judges.length > 0;
+      document.getElementById('startSessionBtn').disabled = !(hasTeams && hasQuestions && hasJudges);
+    }
+
+    // Check session readiness on any change
+    document.getElementById('teamSelect').addEventListener('change', checkSessionReady);
+    document.getElementById('questionSelect').addEventListener('change', checkSessionReady);
+
+    // Handle session start
+    document.getElementById('startSessionBtn').addEventListener('click', () => {
+      if (currentSessionId) {
+        alert(`الجلسة جاهزة بالمعرف: ${currentSessionId}`);
+      } else {
+        alert('يرجى إنشاء جلسة أولاً');
+      }
+    });
+  </script>
+</body>
+</html>
