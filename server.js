@@ -600,6 +600,128 @@ app.get('/api/team/find/:teamName', async (req, res) => {
   }
 });
 
+// Get complete session snapshot (enhanced version for real-time sync)
+app.get('/api/session/:sessionId/snapshot', async (req, res) => {
+  const { sessionId } = req.params;
+  
+  try {
+    const session = await prisma.session.findFirst({
+      where: { sessionId },
+      include: {
+        sessionTeams: {
+          include: { team: true }
+        },
+        sessionQuestions: {
+          include: { question: true }
+        },
+        judges: {
+          where: { isOnline: true },
+          select: { id: true, name: true, isOnline: true }
+        }
+      }
+    });
+    
+    if (!session) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+    
+    const teams = JSON.parse(session.teams || '[]');
+    const currentQuestions = session.currentQuestions ? JSON.parse(session.currentQuestions) : [];
+    const currentTeamName = teams[session.currentTeamIndex];
+    
+    // Get all answers for this session grouped by team
+    const allAnswers = await prisma.answer.findMany({
+      where: { sessionId: session.id },
+      include: {
+        judge: { select: { name: true } },
+        team: { select: { name: true } },
+        question: { select: { text: true } }
+      }
+    });
+    
+    // Get all final answers for this session
+    const finalAnswers = await prisma.finalAnswer.findMany({
+      where: { sessionId: session.id },
+      include: {
+        judge: { select: { name: true } },
+        team: { select: { name: true } }
+      }
+    });
+    
+    // Group answers by team
+    const answersByTeam = {};
+    
+    // Add individual answers
+    allAnswers.forEach(answer => {
+      const teamName = answer.team.name;
+      if (!answersByTeam[teamName]) {
+        answersByTeam[teamName] = [];
+      }
+      answersByTeam[teamName].push({
+        player: answer.judge.name,
+        answer: answer.answer,
+        points: answer.points,
+        question: answer.question.text
+      });
+    });
+    
+    // Add final answers
+    finalAnswers.forEach(finalAnswer => {
+      const teamName = finalAnswer.team.name;
+      if (!answersByTeam[teamName]) {
+        answersByTeam[teamName] = [];
+      }
+      const answers = JSON.parse(finalAnswer.answers);
+      answersByTeam[teamName].push({
+        player: finalAnswer.judge.name,
+        answer: `إجابات نهائية مُرسلة (${answers.length} إجابات)`,
+        points: 0
+      });
+    });
+    
+    // Get leaderboard
+    const results = await prisma.sessionResult.findMany({
+      where: { sessionId: session.id },
+      include: { team: true }
+    });
+    
+    const leaderboard = results.map(result => {
+      const details = JSON.parse(result.details);
+      const answers = details.answers || [];
+      
+      const totalPoints = answers.reduce((sum, answer) => {
+        return sum + (parseFloat(answer.points) || 0);
+      }, 0);
+      
+      return {
+        teamName: result.team.name,
+        totalPoints: Math.round(totalPoints * 100) / 100
+      };
+    });
+    
+    leaderboard.sort((a, b) => b.totalPoints - a.totalPoints);
+    
+    res.json({
+      session: {
+        id: session.id,
+        sessionId: session.sessionId,
+        status: session.status,
+        currentTeamIndex: session.currentTeamIndex,
+        currentTeam: currentTeamName,
+        currentTeamId: session.currentTeamId,
+        teams: teams,
+        currentQuestions: currentQuestions,
+        judges: session.judges,
+        answersByTeam: answersByTeam,
+        leaderboard: leaderboard
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching session snapshot:', error);
+    res.status(500).json({ error: 'Failed to fetch session snapshot' });
+  }
+});
+
 // Get session state
 app.get('/api/session/:sessionId/state', async (req, res) => {
   const { sessionId } = req.params;

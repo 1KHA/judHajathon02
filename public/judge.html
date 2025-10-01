@@ -569,7 +569,7 @@
       }, 5000);
     }
 
-    function subscribeToSession(sessionId) {
+    async function subscribeToSession(sessionId) {
       currentSessionId = sessionId;
       localStorage.setItem('judgeSessionId', sessionId);
       document.getElementById('sessionId').textContent = sessionId;
@@ -581,12 +581,13 @@
         },
         onQuestionsStarted: (data) => {
           console.log('Questions started event received in real-time');
-          displayQuestions(data);
+          // Refresh snapshot to get latest questions
+          refreshJudgeSnapshot();
         },
         onTeamChanged: (data) => {
           console.log('Team changed event received in real-time');
-          document.getElementById('currentTeam').textContent = data.currentTeam;
-          currentTeamId = data.teamId; // Update team ID when team changes
+          // Refresh snapshot to get updated team info
+          refreshJudgeSnapshot();
         },
         onSessionEnded: (data) => {
           console.log('Session ended:', data);
@@ -601,23 +602,46 @@
         }
       });
       
-      // CRITICAL: Immediately check for existing questions after subscribing
-      // This ensures judges who join after questions are sent still see them
+      // Wait for subscription to be established, then get initial snapshot
       setTimeout(async () => {
-        try {
-          const state = await api.getSessionState(sessionId);
-          if (state.session && state.session.currentQuestions && state.session.currentQuestions.length > 0) {
-            console.log('Found existing questions in session state, displaying them now');
+        await refreshJudgeSnapshot();
+      }, 1000);
+
+      // Add polling fallback for complete state sync (every 10 seconds)
+      setInterval(() => {
+        refreshJudgeSnapshot();
+      }, 10000);
+    }
+
+    async function refreshJudgeSnapshot() {
+      if (!currentSessionId) return;
+      
+      try {
+        console.log('Refreshing judge snapshot...');
+        const snapshot = await api.getSessionSnapshot(currentSessionId);
+        
+        if (snapshot.session) {
+          // Update current team
+          if (snapshot.session.currentTeam) {
+            document.getElementById('currentTeam').textContent = snapshot.session.currentTeam;
+            currentTeamId = snapshot.session.currentTeamId;
+          }
+          
+          // Display questions if available
+          if (snapshot.session.currentQuestions && snapshot.session.currentQuestions.length > 0) {
+            console.log('Found questions in snapshot, displaying them now');
             displayQuestions({
-              questions: state.session.currentQuestions,
-              currentTeam: state.session.currentTeam,
-              teamId: state.session.currentTeamId
+              questions: snapshot.session.currentQuestions,
+              currentTeam: snapshot.session.currentTeam,
+              teamId: snapshot.session.currentTeamId
             });
           }
-        } catch (error) {
-          console.error('Error checking for existing questions:', error);
+          
+          console.log('Judge snapshot refreshed successfully');
         }
-      }, 500); // Small delay to ensure subscription is established
+      } catch (error) {
+        console.error('Error refreshing judge snapshot:', error);
+      }
     }
 
     function displayQuestions(data) {

@@ -263,6 +263,10 @@ const api = {
     return this.request(`/api/session/${sessionId}/state`);
   },
 
+  async getSessionSnapshot(sessionId) {
+    return this.request(`/api/session/${sessionId}/snapshot`);
+  },
+
   async getLeaderboard(sessionId) {
     return this.request(`/api/session/${sessionId}/leaderboard`);
   },

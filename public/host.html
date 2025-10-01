@@ -898,57 +898,38 @@
       }
     }
 
-    function subscribeToSession(sessionId) {
+    async function subscribeToSession(sessionId) {
       console.log('Subscribing to session events for session:', sessionId);
       
       // Subscribe to session events
-      window.realtimeManager.subscribeToSession(sessionId, {
+      const subscription = window.realtimeManager.subscribeToSession(sessionId, {
         onQuestionsStarted: (data) => {
           console.log('Questions started event received in real-time:', data);
+          // Refresh snapshot to get latest state
+          refreshSessionSnapshot();
         },
         onTeamChanged: (data) => {
           currentTeam = data.currentTeam;
           document.getElementById('currentTeam').textContent = currentTeam;
           console.log('Team changed to:', currentTeam);
           
-          // Clear answers for new team
-          answersByTeam = {};
-          updateAnswersDisplay();
+          // Refresh snapshot to get updated state
+          refreshSessionSnapshot();
         },
         onAnswerSubmitted: (data) => {
           console.log('Answer submitted event received in real-time:', data);
-          // Update answers display immediately
-          if (!answersByTeam[data.teamName]) {
-            answersByTeam[data.teamName] = [];
-          }
-          answersByTeam[data.teamName].push({
-            player: data.judgeName,
-            answer: data.answer,
-            points: data.points
-          });
-          updateAnswersDisplay();
+          // Refresh snapshot to get latest answers
+          refreshSessionSnapshot();
         },
         onFinalAnswersSubmitted: (data) => {
           console.log('Final answers submitted event received in real-time:', data);
-          // Handle final answers submission immediately
-          if (data.teamName && data.judgeName) {
-            if (!answersByTeam[data.teamName]) {
-              answersByTeam[data.teamName] = [];
-            }
-            answersByTeam[data.teamName].push({
-              player: data.judgeName,
-              answer: `إجابات نهائية مُرسلة (${data.answersCount} إجابات)`,
-              points: data.totalPoints || 0
-            });
-            updateAnswersDisplay();
-            
-            // Also update leaderboard when final answers are submitted
-            setTimeout(() => updateLeaderboard(), 1000);
-          }
+          // Refresh snapshot to get latest answers and leaderboard
+          refreshSessionSnapshot();
         },
         onLeaderboardUpdated: (data) => {
           console.log('Leaderboard updated event received in real-time');
-          updateLeaderboard();
+          // Refresh snapshot to get latest leaderboard
+          refreshSessionSnapshot();
         },
         onJudgeJoined: (data) => {
           console.log('Judge joined event received in real-time:', data);
@@ -964,19 +945,60 @@
         }
       });
 
-      // Add polling fallback for judges list (every 10 seconds)
-      setInterval(() => {
+      // Wait for subscription to be established, then get initial snapshot
+      setTimeout(async () => {
+        await refreshSessionSnapshot();
         updateJudgesList();
-      }, 10000);
+      }, 1000);
 
-      // Add polling fallback for leaderboard (every 15 seconds)
+      // Add polling fallback for complete state sync (every 15 seconds)
       setInterval(() => {
-        updateLeaderboard();
+        refreshSessionSnapshot();
+        updateJudgesList();
       }, 15000);
+    }
 
-      // Initial updates
-      updateJudgesList();
-      updateLeaderboard();
+    async function refreshSessionSnapshot() {
+      if (!currentSessionId) return;
+      
+      try {
+        console.log('Refreshing session snapshot...');
+        const snapshot = await api.getSessionSnapshot(currentSessionId);
+        
+        if (snapshot.session) {
+          // Update current team
+          if (snapshot.session.currentTeam !== currentTeam) {
+            currentTeam = snapshot.session.currentTeam;
+            document.getElementById('currentTeam').textContent = currentTeam;
+          }
+          
+          // Update answers display
+          answersByTeam = snapshot.session.answersByTeam || {};
+          updateAnswersDisplay();
+          
+          // Update leaderboard
+          updateLeaderboardFromSnapshot(snapshot.session.leaderboard || []);
+          
+          console.log('Session snapshot refreshed successfully');
+        }
+      } catch (error) {
+        console.error('Error refreshing session snapshot:', error);
+      }
+    }
+
+    function updateLeaderboardFromSnapshot(leaderboard) {
+      const tableBody = document.querySelector('#leaderboardTable');
+      
+      if (leaderboard.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="2" class="empty-state">لا توجد نتائج بعد</td></tr>';
+      } else {
+        tableBody.innerHTML = leaderboard.map(team => `
+          <tr>
+            <td>${team.teamName}</td>
+            <td style="text-align: left; font-weight: 600; color: var(--primary-color);">${team.totalPoints.toFixed(2)}</td>
+          </tr>
+        `).join('');
+      }
     }
 
     function updateAnswersDisplay() {
