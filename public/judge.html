@@ -436,6 +436,7 @@
     let judgeName = null;
     let currentQuestions = [];
     let currentTeamId = null;
+    let selectedAnswers = {}; // Track selected answers by questionId
     
     // Wait for Supabase to be initialized
     window.addEventListener('supabase-ready', function() {
@@ -586,6 +587,9 @@
         },
         onTeamChanged: (data) => {
           console.log('Team changed event received in real-time');
+          // Clear selected answers for new team
+          selectedAnswers = {};
+          console.log('Cleared selected answers for new team');
           // Refresh snapshot to get updated team info
           refreshJudgeSnapshot();
         },
@@ -689,6 +693,27 @@
         questionDiv.appendChild(choicesDiv);
         container.appendChild(questionDiv);
       });
+      
+      // CRITICAL: Restore previously selected answers after UI rebuild
+      restoreSelectedAnswers();
+    }
+
+    function restoreSelectedAnswers() {
+      console.log('Restoring selected answers:', selectedAnswers);
+      
+      Object.entries(selectedAnswers).forEach(([questionId, selectedAnswer]) => {
+        const questionDiv = document.querySelector(`[data-question-id="${questionId}"]`);
+        if (questionDiv) {
+          const buttons = questionDiv.querySelectorAll('.answer-btn');
+          buttons.forEach(btn => {
+            if (btn.innerText === selectedAnswer) {
+              btn.classList.add('selected');
+              btn.disabled = true;
+              console.log('Restored selection for question', questionId, ':', selectedAnswer);
+            }
+          });
+        }
+      });
     }
 
     async function selectAnswer(questionId, choice, btn, choicesDiv) {
@@ -702,33 +727,32 @@
       btn.classList.add('selected');
       btn.disabled = true;
       
+      // Store selection persistently
+      const answerText = typeof choice === 'object' ? choice.text : choice;
+      selectedAnswers[questionId] = answerText;
+      console.log('Stored answer for question', questionId, ':', answerText);
+      
       // Submit answer
       try {
-        const answerText = typeof choice === 'object' ? choice.text : choice;
         await api.submitAnswer(currentSessionId, judgeToken, answerText, questionId);
         console.log('Answer submitted successfully');
       } catch (error) {
         console.error('Error submitting answer:', error);
-        // Re-enable button on error
+        // Re-enable button on error but keep selection stored
         btn.classList.remove('selected');
         btn.disabled = false;
+        // Don't remove from selectedAnswers in case of network error
       }
     }
 
     async function submitFinalAnswers() {
-      const answers = [];
-      const container = document.getElementById('questions-container');
+      // Use persistent selectedAnswers instead of DOM state
+      const answers = Object.entries(selectedAnswers).map(([questionId, answer]) => ({
+        questionIndex: parseInt(questionId),
+        answer: answer
+      }));
       
-      container.querySelectorAll('.answer-btn.selected').forEach(btn => {
-        const questionDiv = btn.closest('div[data-question-id]');
-        const questionId = questionDiv ? parseInt(questionDiv.getAttribute('data-question-id')) : null;
-        if (questionId !== null) {
-          answers.push({
-            questionIndex: questionId,
-            answer: btn.innerText
-          });
-        }
-      });
+      console.log('Submitting final answers from persistent state:', answers);
       
       // Enhanced team ID resolution with multiple fallback strategies
       let teamIdToUse = currentTeamId;
