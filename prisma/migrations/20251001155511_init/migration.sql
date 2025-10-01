@@ -1,5 +1,5 @@
 -- CreateTable
-CREATE TABLE "Session" (
+CREATE TABLE "public"."Session" (
     "id" SERIAL NOT NULL,
     "name" TEXT NOT NULL,
     "sessionId" TEXT NOT NULL,
@@ -18,7 +18,7 @@ CREATE TABLE "Session" (
 );
 
 -- CreateTable
-CREATE TABLE "Team" (
+CREATE TABLE "public"."Team" (
     "id" SERIAL NOT NULL,
     "name" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -28,7 +28,7 @@ CREATE TABLE "Team" (
 );
 
 -- CreateTable
-CREATE TABLE "QuestionBank" (
+CREATE TABLE "public"."QuestionBank" (
     "id" SERIAL NOT NULL,
     "name" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -38,7 +38,7 @@ CREATE TABLE "QuestionBank" (
 );
 
 -- CreateTable
-CREATE TABLE "Question" (
+CREATE TABLE "public"."Question" (
     "id" SERIAL NOT NULL,
     "text" TEXT NOT NULL,
     "choices" JSONB NOT NULL,
@@ -53,7 +53,7 @@ CREATE TABLE "Question" (
 );
 
 -- CreateTable
-CREATE TABLE "SessionTeam" (
+CREATE TABLE "public"."SessionTeam" (
     "id" SERIAL NOT NULL,
     "sessionId" INTEGER NOT NULL,
     "teamId" INTEGER NOT NULL,
@@ -64,7 +64,7 @@ CREATE TABLE "SessionTeam" (
 );
 
 -- CreateTable
-CREATE TABLE "SessionQuestion" (
+CREATE TABLE "public"."SessionQuestion" (
     "id" SERIAL NOT NULL,
     "sessionId" INTEGER NOT NULL,
     "questionId" INTEGER NOT NULL,
@@ -75,7 +75,7 @@ CREATE TABLE "SessionQuestion" (
 );
 
 -- CreateTable
-CREATE TABLE "Judge" (
+CREATE TABLE "public"."Judge" (
     "id" SERIAL NOT NULL,
     "name" TEXT NOT NULL,
     "judgeToken" TEXT,
@@ -88,7 +88,7 @@ CREATE TABLE "Judge" (
 );
 
 -- CreateTable
-CREATE TABLE "Answer" (
+CREATE TABLE "public"."Answer" (
     "id" SERIAL NOT NULL,
     "answer" TEXT NOT NULL,
     "points" DOUBLE PRECISION,
@@ -103,7 +103,7 @@ CREATE TABLE "Answer" (
 );
 
 -- CreateTable
-CREATE TABLE "SessionResult" (
+CREATE TABLE "public"."SessionResult" (
     "id" SERIAL NOT NULL,
     "sessionId" INTEGER NOT NULL,
     "teamId" INTEGER NOT NULL,
@@ -116,7 +116,7 @@ CREATE TABLE "SessionResult" (
 );
 
 -- CreateTable
-CREATE TABLE "FinalAnswer" (
+CREATE TABLE "public"."FinalAnswer" (
     "id" SERIAL NOT NULL,
     "sessionId" INTEGER NOT NULL,
     "teamId" INTEGER NOT NULL,
@@ -129,7 +129,7 @@ CREATE TABLE "FinalAnswer" (
 );
 
 -- CreateTable
-CREATE TABLE "SessionEvent" (
+CREATE TABLE "public"."SessionEvent" (
     "id" SERIAL NOT NULL,
     "sessionId" INTEGER NOT NULL,
     "eventType" TEXT NOT NULL,
@@ -140,73 +140,73 @@ CREATE TABLE "SessionEvent" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Session_sessionId_key" ON "Session"("sessionId");
+CREATE UNIQUE INDEX "Session_sessionId_key" ON "public"."Session"("sessionId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Session_hostToken_key" ON "Session"("hostToken");
+CREATE UNIQUE INDEX "Session_hostToken_key" ON "public"."Session"("hostToken");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "QuestionBank_name_key" ON "QuestionBank"("name");
+CREATE UNIQUE INDEX "QuestionBank_name_key" ON "public"."QuestionBank"("name");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "SessionTeam_sessionId_teamId_key" ON "SessionTeam"("sessionId", "teamId");
+CREATE UNIQUE INDEX "SessionTeam_sessionId_teamId_key" ON "public"."SessionTeam"("sessionId", "teamId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "SessionQuestion_sessionId_questionId_key" ON "SessionQuestion"("sessionId", "questionId");
+CREATE UNIQUE INDEX "SessionQuestion_sessionId_questionId_key" ON "public"."SessionQuestion"("sessionId", "questionId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Judge_name_key" ON "Judge"("name");
+CREATE UNIQUE INDEX "Judge_name_key" ON "public"."Judge"("name");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Judge_judgeToken_key" ON "Judge"("judgeToken");
+CREATE UNIQUE INDEX "Judge_judgeToken_key" ON "public"."Judge"("judgeToken");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "SessionResult_sessionId_teamId_key" ON "SessionResult"("sessionId", "teamId");
+CREATE UNIQUE INDEX "SessionResult_sessionId_teamId_key" ON "public"."SessionResult"("sessionId", "teamId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "FinalAnswer_sessionId_teamId_judgeId_key" ON "FinalAnswer"("sessionId", "teamId", "judgeId");
+CREATE UNIQUE INDEX "FinalAnswer_sessionId_teamId_judgeId_key" ON "public"."FinalAnswer"("sessionId", "teamId", "judgeId");
 
 -- AddForeignKey
-ALTER TABLE "Question" ADD CONSTRAINT "Question_bankId_fkey" FOREIGN KEY ("bankId") REFERENCES "QuestionBank"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "public"."Question" ADD CONSTRAINT "Question_bankId_fkey" FOREIGN KEY ("bankId") REFERENCES "public"."QuestionBank"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "SessionTeam" ADD CONSTRAINT "SessionTeam_sessionId_fkey" FOREIGN KEY ("sessionId") REFERENCES "Session"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "public"."SessionTeam" ADD CONSTRAINT "SessionTeam_sessionId_fkey" FOREIGN KEY ("sessionId") REFERENCES "public"."Session"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "SessionTeam" ADD CONSTRAINT "SessionTeam_teamId_fkey" FOREIGN KEY ("teamId") REFERENCES "Team"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "public"."SessionTeam" ADD CONSTRAINT "SessionTeam_teamId_fkey" FOREIGN KEY ("teamId") REFERENCES "public"."Team"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "SessionQuestion" ADD CONSTRAINT "SessionQuestion_sessionId_fkey" FOREIGN KEY ("sessionId") REFERENCES "Session"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "public"."SessionQuestion" ADD CONSTRAINT "SessionQuestion_sessionId_fkey" FOREIGN KEY ("sessionId") REFERENCES "public"."Session"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "SessionQuestion" ADD CONSTRAINT "SessionQuestion_questionId_fkey" FOREIGN KEY ("questionId") REFERENCES "Question"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "public"."SessionQuestion" ADD CONSTRAINT "SessionQuestion_questionId_fkey" FOREIGN KEY ("questionId") REFERENCES "public"."Question"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Answer" ADD CONSTRAINT "Answer_questionId_fkey" FOREIGN KEY ("questionId") REFERENCES "Question"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "public"."Answer" ADD CONSTRAINT "Answer_questionId_fkey" FOREIGN KEY ("questionId") REFERENCES "public"."Question"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Answer" ADD CONSTRAINT "Answer_teamId_fkey" FOREIGN KEY ("teamId") REFERENCES "Team"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "public"."Answer" ADD CONSTRAINT "Answer_teamId_fkey" FOREIGN KEY ("teamId") REFERENCES "public"."Team"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Answer" ADD CONSTRAINT "Answer_judgeId_fkey" FOREIGN KEY ("judgeId") REFERENCES "Judge"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "public"."Answer" ADD CONSTRAINT "Answer_judgeId_fkey" FOREIGN KEY ("judgeId") REFERENCES "public"."Judge"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Answer" ADD CONSTRAINT "Answer_sessionId_fkey" FOREIGN KEY ("sessionId") REFERENCES "Session"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "public"."Answer" ADD CONSTRAINT "Answer_sessionId_fkey" FOREIGN KEY ("sessionId") REFERENCES "public"."Session"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "SessionResult" ADD CONSTRAINT "SessionResult_sessionId_fkey" FOREIGN KEY ("sessionId") REFERENCES "Session"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "public"."SessionResult" ADD CONSTRAINT "SessionResult_sessionId_fkey" FOREIGN KEY ("sessionId") REFERENCES "public"."Session"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "SessionResult" ADD CONSTRAINT "SessionResult_teamId_fkey" FOREIGN KEY ("teamId") REFERENCES "Team"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "public"."SessionResult" ADD CONSTRAINT "SessionResult_teamId_fkey" FOREIGN KEY ("teamId") REFERENCES "public"."Team"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "FinalAnswer" ADD CONSTRAINT "FinalAnswer_sessionId_fkey" FOREIGN KEY ("sessionId") REFERENCES "Session"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "public"."FinalAnswer" ADD CONSTRAINT "FinalAnswer_sessionId_fkey" FOREIGN KEY ("sessionId") REFERENCES "public"."Session"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "FinalAnswer" ADD CONSTRAINT "FinalAnswer_teamId_fkey" FOREIGN KEY ("teamId") REFERENCES "Team"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "public"."FinalAnswer" ADD CONSTRAINT "FinalAnswer_teamId_fkey" FOREIGN KEY ("teamId") REFERENCES "public"."Team"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "FinalAnswer" ADD CONSTRAINT "FinalAnswer_judgeId_fkey" FOREIGN KEY ("judgeId") REFERENCES "Judge"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "public"."FinalAnswer" ADD CONSTRAINT "FinalAnswer_judgeId_fkey" FOREIGN KEY ("judgeId") REFERENCES "public"."Judge"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "SessionEvent" ADD CONSTRAINT "SessionEvent_sessionId_fkey" FOREIGN KEY ("sessionId") REFERENCES "Session"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "public"."SessionEvent" ADD CONSTRAINT "SessionEvent_sessionId_fkey" FOREIGN KEY ("sessionId") REFERENCES "public"."Session"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

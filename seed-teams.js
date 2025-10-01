@@ -1,7 +1,13 @@
 require('dotenv').config();
 const { PrismaClient } = require('@prisma/client');
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({
+  datasources: {
+    db: {
+      url: process.env.DIRECT_URL || process.env.DATABASE_URL
+    }
+  }
+});
 
 async function main() {
   console.log('Starting seed...');

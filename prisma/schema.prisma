@@ -6,8 +6,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model Session {
@@ -34,7 +35,7 @@ model Session {
 
 model Team {
   id        Int      @id @default(autoincrement())
-  name      String
+  name      String   @unique
   sessionTeams SessionTeam[]
   answers   Answer[]
   results   SessionResult[]
