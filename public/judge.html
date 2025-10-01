@@ -477,10 +477,15 @@
         if (result.success) {
           judgeName = result.judge.name;
           judgeToken = result.judge.judgeToken;
+          currentSessionId = result.sessionId;
           
           // Store judge info in localStorage
           localStorage.setItem('judgeName', judgeName);
           localStorage.setItem('judgeToken', judgeToken);
+          if (currentSessionId) {
+            localStorage.setItem('judgeSessionId', currentSessionId);
+            document.getElementById('sessionId').textContent = currentSessionId;
+          }
           
           // Smooth transition
           document.getElementById('loginCard').style.display = 'none';
@@ -489,8 +494,13 @@
           // Show success notification
           showSuccessMessage(`مرحباً ${judgeName}! تم الانضمام بنجاح`);
           
-          // Wait for session to start
-          waitForSession();
+          // Subscribe to session if available
+          if (currentSessionId) {
+            subscribeToSession(currentSessionId);
+          } else {
+            // Wait for session to start
+            waitForSession();
+          }
         }
       } catch (error) {
         console.error('Error joining:', error);

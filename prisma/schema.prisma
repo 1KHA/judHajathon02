@@ -26,6 +26,7 @@ model Session {
   updatedAt DateTime @updatedAt
   sessionTeams SessionTeam[] @relation("SessionToSessionTeam")
   sessionQuestions SessionQuestion[] @relation("SessionToSessionQuestion")
+  judges    Judge[]
   answers   Answer[]
   results   SessionResult[]
   finalAnswers FinalAnswer[]
@@ -95,6 +96,7 @@ model Judge {
   id        Int      @id @default(autoincrement())
   name      String   @unique
   judgeToken String? @unique
+  session   Session? @relation(fields: [sessionId], references: [id])
   sessionId  Int?
   isOnline  Boolean  @default(false)
   answers   Answer[]

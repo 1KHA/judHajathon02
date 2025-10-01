@@ -915,6 +915,10 @@
         },
         onLeaderboardUpdated: (data) => {
           updateLeaderboard();
+        },
+        onJudgeJoined: (data) => {
+          console.log('Judge joined:', data);
+          updateJudgesList();
         }
       });
 
@@ -924,6 +928,14 @@
           updateJudgesList();
         }
       });
+
+      // Add polling fallback for judges list (every 10 seconds)
+      setInterval(() => {
+        updateJudgesList();
+      }, 10000);
+
+      // Initial judges list update
+      updateJudgesList();
     }
 
     function updateAnswersDisplay() {
@@ -947,9 +959,27 @@
     }
 
     async function updateJudgesList() {
-      // This would need an API endpoint to get judges for the session
-      // For now, we'll just update the UI based on events
-      checkSessionReady();
+      if (!currentSessionId) return;
+      
+      try {
+        const data = await api.getJudges(currentSessionId);
+        judges = data.judges || [];
+        
+        const judgesList = document.getElementById('judges');
+        if (judges.length === 0) {
+          judgesList.innerHTML = '<li class="empty-state">لا يوجد محكمون متصلون</li>';
+        } else {
+          judgesList.innerHTML = judges.map(judge => `
+            <li class="online">
+              ${judge.name}
+            </li>
+          `).join('');
+        }
+        
+        checkSessionReady();
+      } catch (error) {
+        console.error('Error updating judges list:', error);
+      }
     }
 
     async function updateLeaderboard() {

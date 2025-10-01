@@ -66,7 +66,7 @@ app.get('/api/host/init', async (req, res) => {
 
 // Join as judge
 app.post('/api/judge/join', async (req, res) => {
-  const { pin, name } = req.body;
+  const { pin, name, sessionId } = req.body;
   
   if (!name || name.trim() === '') {
     return res.status(400).json({ error: 'Name is required' });
@@ -79,18 +79,47 @@ app.post('/api/judge/join', async (req, res) => {
   try {
     const judgeToken = uuidv4();
     
+    // Find active session if sessionId provided, otherwise find any active session
+    let session = null;
+    if (sessionId) {
+      session = await prisma.session.findFirst({
+        where: { sessionId, status: { in: ['waiting', 'active'] } }
+      });
+    } else {
+      session = await prisma.session.findFirst({
+        where: { status: { in: ['waiting', 'active'] } },
+        orderBy: { createdAt: 'desc' }
+      });
+    }
+    
     const judge = await prisma.judge.upsert({
       where: { name },
       create: { 
         name,
         judgeToken,
-        isOnline: true
+        isOnline: true,
+        sessionId: session?.id || null
       },
       update: { 
         judgeToken,
-        isOnline: true
+        isOnline: true,
+        sessionId: session?.id || null
       }
     });
+    
+    // Create session event for judge joining
+    if (session) {
+      await prisma.sessionEvent.create({
+        data: {
+          sessionId: session.id,
+          eventType: 'judge_joined',
+          eventData: { 
+            judgeName: judge.name,
+            judgeId: judge.id
+          }
+        }
+      });
+    }
     
     res.json({ 
       success: true,
@@ -98,7 +127,8 @@ app.post('/api/judge/join', async (req, res) => {
         id: judge.id,
         name: judge.name,
         judgeToken: judge.judgeToken
-      }
+      },
+      sessionId: session?.sessionId || null
     });
   } catch (error) {
     console.error('Error creating judge:', error);
@@ -419,6 +449,31 @@ app.post('/api/answer/submit-final', async (req, res) => {
   }
 });
 
+// Get judges for a session
+app.get('/api/session/:sessionId/judges', async (req, res) => {
+  const { sessionId } = req.params;
+  
+  try {
+    const session = await prisma.session.findFirst({
+      where: { sessionId }
+    });
+    
+    if (!session) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+    
+    const judges = await prisma.judge.findMany({
+      where: { sessionId: session.id, isOnline: true },
+      select: { id: true, name: true, isOnline: true, createdAt: true }
+    });
+    
+    res.json({ judges });
+  } catch (error) {
+    console.error('Error fetching judges:', error);
+    res.status(500).json({ error: 'Failed to fetch judges' });
+  }
+});
+
 // Get session state
 app.get('/api/session/:sessionId/state', async (req, res) => {
   const { sessionId } = req.params;
@@ -432,6 +487,10 @@ app.get('/api/session/:sessionId/state', async (req, res) => {
         },
         sessionQuestions: {
           include: { question: true }
+        },
+        judges: {
+          where: { isOnline: true },
+          select: { id: true, name: true, isOnline: true }
         }
       }
     });
@@ -452,7 +511,8 @@ app.get('/api/session/:sessionId/state', async (req, res) => {
         currentTeam: teams[session.currentTeamIndex],
         teams: teams,
         currentQuestions: currentQuestions,
-        totalPoints: session.totalPoints
+        totalPoints: session.totalPoints,
+        judges: session.judges
       }
     });
   } catch (error) {

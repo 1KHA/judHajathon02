@@ -237,6 +237,10 @@ const api = {
     return this.request(`/api/session/${sessionId}/leaderboard`);
   },
 
+  async getJudges(sessionId) {
+    return this.request(`/api/session/${sessionId}/judges`);
+  },
+
   async saveQuestions(questions, totalPoints, bankName) {
     return this.request('/api/questions/save', {
       method: 'POST',
