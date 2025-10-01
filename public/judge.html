@@ -428,11 +428,6 @@
 
   <!-- Supabase Client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script>
-    // Configure Supabase credentials
-    window.SUPABASE_URL = 'YOUR_SUPABASE_URL';
-    window.SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
-  </script>
   <script src="/supabase-client.js"></script>
   
   <script>
@@ -442,15 +437,26 @@
     let currentQuestions = [];
     let currentTeamId = null;
     
-    // Check for existing session on page load
-    const savedSessionId = localStorage.getItem('judgeSessionId');
-    const savedJudgeName = localStorage.getItem('judgeName');
-    const savedJudgeToken = localStorage.getItem('judgeToken');
+    // Wait for Supabase to be initialized
+    window.addEventListener('supabase-ready', function() {
+      console.log('Supabase is ready');
+      
+      // Check for existing session on page load
+      const savedSessionId = localStorage.getItem('judgeSessionId');
+      const savedJudgeName = localStorage.getItem('judgeName');
+      const savedJudgeToken = localStorage.getItem('judgeToken');
 
-    if (savedSessionId && savedJudgeName && savedJudgeToken) {
-      // Attempt to rejoin existing session
-      rejoinSession(savedSessionId, savedJudgeName, savedJudgeToken);
-    }
+      if (savedSessionId && savedJudgeName && savedJudgeToken) {
+        // Attempt to rejoin existing session
+        rejoinSession(savedSessionId, savedJudgeName, savedJudgeToken);
+      }
+    });
+
+    // Handle Supabase initialization error
+    window.addEventListener('supabase-error', function() {
+      console.error('Failed to initialize Supabase');
+      alert('خطأ في الاتصال بقاعدة البيانات. يرجى التحقق من الإعدادات.');
+    });
 
     // Check for active sessions periodically
     async function checkForActiveSession() {

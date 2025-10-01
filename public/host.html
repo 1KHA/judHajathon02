@@ -625,11 +625,6 @@
 
   <!-- Supabase Client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script>
-    // Configure Supabase credentials
-    window.SUPABASE_URL = 'YOUR_SUPABASE_URL';
-    window.SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
-  </script>
   <script src="/supabase-client.js"></script>
   
   <script>
@@ -640,17 +635,28 @@
     let judges = [];
     let answersByTeam = {};
 
-    // Check for existing session on page load
-    const savedSessionId = localStorage.getItem('hostSessionId');
-    const savedHostToken = localStorage.getItem('hostToken');
+    // Wait for Supabase to be initialized
+    window.addEventListener('supabase-ready', function() {
+      console.log('Supabase is ready');
+      
+      // Check for existing session on page load
+      const savedSessionId = localStorage.getItem('hostSessionId');
+      const savedHostToken = localStorage.getItem('hostToken');
 
-    if (savedSessionId && savedHostToken) {
-      // Attempt to rejoin existing session
-      rejoinSession(savedSessionId, savedHostToken);
-    } else {
-      // Load initial data
-      loadInitialData();
-    }
+      if (savedSessionId && savedHostToken) {
+        // Attempt to rejoin existing session
+        rejoinSession(savedSessionId, savedHostToken);
+      } else {
+        // Load initial data
+        loadInitialData();
+      }
+    });
+
+    // Handle Supabase initialization error
+    window.addEventListener('supabase-error', function() {
+      console.error('Failed to initialize Supabase');
+      alert('خطأ في الاتصال بقاعدة البيانات. يرجى التحقق من الإعدادات.');
+    });
 
     async function loadInitialData() {
       try {

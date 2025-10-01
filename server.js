@@ -25,6 +25,14 @@ app.use(express.static('public'));
 
 // API Routes
 
+// Get Supabase configuration for frontend
+app.get('/api/supabase-config', (req, res) => {
+  res.json({
+    url: process.env.SUPABASE_URL,
+    anonKey: process.env.SUPABASE_ANON_KEY
+  });
+});
+
 // Get initial data for host
 app.get('/api/host/init', async (req, res) => {
   try {

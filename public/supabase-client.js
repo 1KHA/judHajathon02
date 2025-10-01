@@ -1,9 +1,31 @@
 // Initialize Supabase client for frontend use
-const SUPABASE_URL = window.SUPABASE_URL || 'YOUR_SUPABASE_URL';
-const SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || 'YOUR_SUPABASE_ANON_KEY';
+let supabaseClient = null;
+let realtimeManager = null;
 
-// Create Supabase client
-const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// Fetch Supabase configuration from server
+async function initializeSupabase() {
+  try {
+    const response = await fetch('/api/supabase-config');
+    if (!response.ok) {
+      throw new Error('Failed to fetch Supabase configuration');
+    }
+    
+    const config = await response.json();
+    
+    // Create Supabase client with fetched configuration
+    supabaseClient = window.supabase.createClient(config.url, config.anonKey);
+    
+    // Initialize realtime manager
+    realtimeManager = new RealtimeManager();
+    window.realtimeManager = realtimeManager;
+    
+    console.log('Supabase client initialized successfully');
+    return true;
+  } catch (error) {
+    console.error('Error initializing Supabase:', error);
+    return false;
+  }
+}
 
 // Real-time subscription manager
 class RealtimeManager {
@@ -135,9 +157,6 @@ class RealtimeManager {
   }
 }
 
-// Create a global instance
-window.realtimeManager = new RealtimeManager();
-
 // API helper functions
 const api = {
   // Base URL for API calls
@@ -228,3 +247,14 @@ const api = {
 
 // Export for use
 window.api = api;
+
+// Initialize Supabase when the script loads
+initializeSupabase().then(success => {
+  if (success) {
+    // Dispatch event to notify that Supabase is ready
+    window.dispatchEvent(new Event('supabase-ready'));
+  } else {
+    // Dispatch event to notify that Supabase failed to initialize
+    window.dispatchEvent(new Event('supabase-error'));
+  }
+});
