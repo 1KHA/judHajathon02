@@ -685,8 +685,25 @@
         }
       });
       
-      if (!currentTeamId) {
-        alert('خطأ: لم يتم اختيار فريق');
+      // Check if we have a valid team ID, if not try to get it from session state
+      let teamIdToUse = currentTeamId;
+      if (!teamIdToUse) {
+        console.log('No teamId available, trying to get from session state...');
+        try {
+          const state = await api.getSessionState(currentSessionId);
+          if (state.session && state.session.currentTeamId) {
+            teamIdToUse = state.session.currentTeamId;
+            currentTeamId = teamIdToUse;
+            console.log('Got teamId from session state:', teamIdToUse);
+          }
+        } catch (error) {
+          console.error('Error getting session state:', error);
+        }
+      }
+      
+      if (!teamIdToUse) {
+        alert('خطأ: لم يتم اختيار فريق. يرجى إعادة تحميل الصفحة.');
+        console.error('No team ID available for final answers submission');
         return;
       }
       
@@ -696,18 +713,20 @@
       }
       
       try {
-        await api.submitFinalAnswers(currentSessionId, judgeToken, currentTeamId, answers);
+        await api.submitFinalAnswers(currentSessionId, judgeToken, teamIdToUse, answers);
         showSuccessMessage('تم إرسال الإجابات بنجاح!');
         
         // Disable submit button
         document.getElementById('submitFinalBtn').disabled = true;
       } catch (error) {
         console.error('Error submitting final answers:', error);
-        alert('خطأ في إرسال الإجابات');
+        alert('خطأ في إرسال الإجابات: ' + error.message);
       }
     }
 
     function handleSessionEnded() {
+      console.log('Handling session end...');
+      
       // Clear session data from localStorage
       localStorage.removeItem('judgeSessionId');
       localStorage.removeItem('judgeName');
@@ -715,6 +734,13 @@
       
       // Unsubscribe from real-time updates
       window.realtimeManager.unsubscribeAll();
+      
+      // Reset global variables
+      currentSessionId = null;
+      judgeToken = null;
+      judgeName = null;
+      currentQuestions = [];
+      currentTeamId = null;
       
       // Reset UI state
       document.getElementById('loginCard').style.display = 'block';

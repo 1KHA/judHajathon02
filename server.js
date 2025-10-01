@@ -234,16 +234,32 @@ app.post('/api/session/:sessionId/start-questions', async (req, res) => {
     
     // Get current team
     const teams = JSON.parse(session.teams);
-    const currentTeam = await prisma.team.findFirst({
-      where: { name: teams[session.currentTeamIndex] }
+    const currentTeamName = teams[session.currentTeamIndex];
+    
+    console.log('Looking for team:', currentTeamName, 'at index:', session.currentTeamIndex);
+    console.log('Available teams:', teams);
+    
+    let currentTeam = await prisma.team.findFirst({
+      where: { name: currentTeamName }
     });
+    
+    // If team not found, create it
+    if (!currentTeam && currentTeamName) {
+      console.log('Team not found, creating:', currentTeamName);
+      currentTeam = await prisma.team.create({
+        data: { name: currentTeamName }
+      });
+    }
+    
+    const teamId = currentTeam?.id || null;
+    console.log('Using teamId:', teamId, 'for team:', currentTeamName);
     
     // Update session with current questions
     await prisma.session.update({
       where: { id: session.id },
       data: {
         currentQuestions: JSON.stringify(allQuestions),
-        currentTeamId: currentTeam?.id || null,
+        currentTeamId: teamId,
         status: 'active'
       }
     });
@@ -255,8 +271,8 @@ app.post('/api/session/:sessionId/start-questions', async (req, res) => {
         eventType: 'questions_started',
         eventData: {
           questions: allQuestions,
-          currentTeam: teams[session.currentTeamIndex],
-          teamId: currentTeam?.id
+          currentTeam: currentTeamName,
+          teamId: teamId
         }
       }
     });
