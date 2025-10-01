@@ -899,10 +899,12 @@
     }
 
     function subscribeToSession(sessionId) {
+      console.log('Subscribing to session events for session:', sessionId);
+      
       // Subscribe to session events
       window.realtimeManager.subscribeToSession(sessionId, {
         onQuestionsStarted: (data) => {
-          console.log('Questions started:', data);
+          console.log('Questions started event received:', data);
         },
         onTeamChanged: (data) => {
           currentTeam = data.currentTeam;
@@ -910,6 +912,7 @@
           console.log('Team changed to:', currentTeam);
         },
         onAnswerSubmitted: (data) => {
+          console.log('Answer submitted event received:', data);
           // Update answers display
           if (!answersByTeam[data.teamName]) {
             answersByTeam[data.teamName] = [];
@@ -922,10 +925,11 @@
           updateAnswersDisplay();
         },
         onLeaderboardUpdated: (data) => {
+          console.log('Leaderboard updated event received');
           updateLeaderboard();
         },
         onJudgeJoined: (data) => {
-          console.log('Judge joined:', data);
+          console.log('Judge joined event received:', data);
           updateJudgesList();
         }
       });

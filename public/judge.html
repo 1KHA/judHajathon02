@@ -606,6 +606,8 @@
       currentQuestions = Array.isArray(data.questions) ? data.questions : [data.questions];
       currentTeamId = data.teamId;
       
+      console.log('Setting currentTeamId:', currentTeamId);
+      
       const container = document.getElementById('questions-container');
       container.innerHTML = '';
       

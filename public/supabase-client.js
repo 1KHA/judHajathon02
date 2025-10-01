@@ -41,6 +41,8 @@ class RealtimeManager {
       this.unsubscribe(channelName);
     }
 
+    console.log(`Subscribing to session events for session: ${sessionId}`);
+    
     const channel = supabaseClient
       .channel(channelName)
       .on(
@@ -53,34 +55,48 @@ class RealtimeManager {
         },
         (payload) => {
           const event = payload.new;
-          console.log('Session event:', event);
+          console.log('Received session event:', event);
           
           // Call appropriate callback based on event type
           switch (event.eventType) {
             case 'session_created':
+              console.log('Session created event received');
               callbacks.onSessionCreated?.(event.eventData);
               break;
             case 'questions_started':
+              console.log('Questions started event received');
               callbacks.onQuestionsStarted?.(event.eventData);
               break;
             case 'team_changed':
+              console.log('Team changed event received');
               callbacks.onTeamChanged?.(event.eventData);
               break;
             case 'answer_submitted':
+              console.log('Answer submitted event received:', event.eventData);
               callbacks.onAnswerSubmitted?.(event.eventData);
               break;
             case 'leaderboard_updated':
+              console.log('Leaderboard updated event received');
               callbacks.onLeaderboardUpdated?.(event.eventData);
               break;
             case 'session_ended':
+              console.log('Session ended event received');
               callbacks.onSessionEnded?.(event.eventData);
               break;
             default:
+              console.log('Unknown event type received:', event.eventType);
               callbacks.onEvent?.(event);
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log(`Realtime subscription status for ${channelName}:`, status);
+        if (status === 'SUBSCRIBED') {
+          console.log(`Successfully subscribed to session events for session: ${sessionId}`);
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error(`Error subscribing to session events for session: ${sessionId}`);
+        }
+      });
 
     this.subscriptions.set(channelName, channel);
     return channel;
