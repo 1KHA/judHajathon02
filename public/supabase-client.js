@@ -75,6 +75,10 @@ class RealtimeManager {
               console.log('Answer submitted event received:', event.eventData);
               callbacks.onAnswerSubmitted?.(event.eventData);
               break;
+            case 'final_answers_submitted':
+              console.log('Final answers submitted event received:', event.eventData);
+              callbacks.onFinalAnswersSubmitted?.(event.eventData);
+              break;
             case 'leaderboard_updated':
               console.log('Leaderboard updated event received');
               callbacks.onLeaderboardUpdated?.(event.eventData);

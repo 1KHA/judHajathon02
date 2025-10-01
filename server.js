@@ -526,8 +526,27 @@ app.post('/api/answer/submit-final', async (req, res) => {
       }
     });
     
+    // Get team and judge info for the event
+    const team = await prisma.team.findUnique({
+      where: { id: parseInt(teamId) }
+    });
+    
     // Calculate and update team results
     await updateTeamResults(session.id, parseInt(teamId));
+    
+    // Create event for final answers submission
+    await prisma.sessionEvent.create({
+      data: {
+        sessionId: session.id,
+        eventType: 'final_answers_submitted',
+        eventData: {
+          judgeName: judge.name,
+          teamName: team?.name || 'Unknown Team',
+          teamId: parseInt(teamId),
+          answersCount: answers.length
+        }
+      }
+    });
     
     res.json({ success: true });
   } catch (error) {

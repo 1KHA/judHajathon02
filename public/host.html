@@ -924,6 +924,21 @@
           });
           updateAnswersDisplay();
         },
+        onFinalAnswersSubmitted: (data) => {
+          console.log('Final answers submitted event received:', data);
+          // Handle final answers submission
+          if (data.teamName && data.judgeName) {
+            if (!answersByTeam[data.teamName]) {
+              answersByTeam[data.teamName] = [];
+            }
+            answersByTeam[data.teamName].push({
+              player: data.judgeName,
+              answer: `إجابات نهائية مُرسلة (${data.answersCount} إجابات)`,
+              points: data.totalPoints || 0
+            });
+            updateAnswersDisplay();
+          }
+        },
         onLeaderboardUpdated: (data) => {
           console.log('Leaderboard updated event received');
           updateLeaderboard();
