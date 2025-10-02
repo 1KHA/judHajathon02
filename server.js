@@ -959,12 +959,22 @@ async function updateTeamResults(sessionId, teamId) {
           const points = calculateAnswerPoints(question, answer.answer);
           totalPoints += points;
           
+          // Find the selected option to get its weight
+          const selectedOption = typeof answer.answer === 'object' 
+            ? question.choices.find(opt => opt.text === answer.answer.text)
+            : question.choices.find(opt => opt.text === answer.answer);
+          
+          const optionWeight = selectedOption?.weight || 0;
+          const maxOptionWeight = Math.max(...question.choices.map(o => o.weight || 0));
+          
           allDetailedAnswers.push({
             questionText: question.text,
             questionWeight: question.weight || 1,
             judgeName: judge?.name || 'Unknown',
             answer: answer.answer,
-            points: points
+            points: points,
+            optionWeight: optionWeight,
+            maxOptionWeight: maxOptionWeight
           });
         }
       }
