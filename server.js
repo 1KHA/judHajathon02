@@ -826,7 +826,7 @@ app.get('/api/results/all', async (req, res) => {
         status: 'ended'
       },
       include: {
-        sessionResults: {
+        results: {
           include: {
             team: true
           },
@@ -844,7 +844,7 @@ app.get('/api/results/all', async (req, res) => {
       sessionId: session.sessionId,
       name: session.name,
       createdAt: session.createdAt,
-      results: session.sessionResults.map(result => ({
+      results: session.results.map(result => ({
         team: {
           name: result.team.name
         },

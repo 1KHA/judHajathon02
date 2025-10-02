@@ -522,6 +522,21 @@
         const state = await api.getSessionState(sessionId);
         
         if (state.session) {
+          // Check if session has ended
+          if (state.session.status === 'ended') {
+            console.log('Session has ended, clearing stored data');
+            // Clear invalid tokens
+            localStorage.removeItem('judgeSessionId');
+            localStorage.removeItem('judgeName');
+            localStorage.removeItem('judgeToken');
+            
+            // Show login form
+            document.getElementById('loginCard').style.display = 'block';
+            document.getElementById('question-box').style.display = 'none';
+            alert('انتهت الجلسة السابقة. يرجى الانضمام لجلسة جديدة.');
+            return;
+          }
+          
           currentSessionId = sessionId;
           judgeName = name;
           judgeToken = token;
