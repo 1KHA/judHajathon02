@@ -12,26 +12,61 @@ const prisma = new PrismaClient({
 async function main() {
   console.log('Starting seed...');
 
-  // Sample teams
-  const teams = [
-    'فريق الأبطال',
-    'فريق النجوم',
-    'فريق الصقور',
-    'فريق الأسود',
-    'فريق العمالقة',
-    'فريق الفرسان',
-    'فريق النسور',
-    'فريق الأمل'
-  ];
+  // Categorized teams
+  const teamCategories = {
+    'مسار التحديات الصحية': [
+      'عين الرحمة',
+      'PocketAid',
+      'سند',
+      'ظليل',
+      'لَبيب',
+      'إتزان',
+      'سلامة - Salama',
+      'SafeVision'
+    ],
+    'مسار التحديات البيئية': [
+      'بتلقاه - Betlqah',
+      'إماطة',
+      'خُطى مُستَدامَة',
+      'سِرْبَال',
+      'وَصل',
+      'نديم',
+      'إرتواء – Ertwa',
+      'ريفيرت'
+    ],
+    'مسار تحديات البنية التحتية': [
+      'طويق',
+      'رَقِيب – RAQEEB',
+      'GREENCAP',
+      'خُطى',
+      'أفق',
+      'معراج',
+      'سراج'
+    ],
+    'مسار إدارة الحشود': [
+      'اشراقة النور',
+      'منارة \\ منارة الحشود الذكية',
+      'نبيه',
+      'تطبيق رشد',
+      'وفود',
+      'آمِن',
+      'نسك ترانزيت',
+      'SafeCrowd | الحشود الآمنه',
+      'لم شمل الافراد الضائعين'
+    ]
+  };
 
-  // Create teams
-  for (const teamName of teams) {
-    await prisma.team.upsert({
-      where: { name: teamName },
-      update: {},
-      create: { name: teamName }
-    });
-    console.log(`Created team: ${teamName}`);
+  // Create teams per category
+  for (const [category, teams] of Object.entries(teamCategories)) {
+    for (const teamName of teams) {
+      const trimmedName = teamName.trim();
+      await prisma.team.upsert({
+        where: { name: trimmedName },
+        update: { teamCategory: category },
+        create: { name: trimmedName, teamCategory: category }
+      });
+      console.log(`Created team: ${trimmedName} (${category})`);
+    }
   }
 
   // Sample question bank

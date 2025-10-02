@@ -37,6 +37,7 @@ model Session {
 model Team {
   id        Int      @id @default(autoincrement())
   name      String   @unique
+  teamCategory String  @default("غير مصنف")
   sessionTeams SessionTeam[]
   answers   Answer[]
   results   SessionResult[]

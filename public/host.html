@@ -255,6 +255,61 @@
       text-align: center;
     }
 
+    .team-summary {
+      background: white;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 12px;
+      margin-top: 12px;
+      max-height: 180px;
+      overflow-y: auto;
+    }
+
+    .team-summary-section {
+      margin-bottom: 12px;
+    }
+
+    .team-summary-section:last-child {
+      margin-bottom: 0;
+    }
+
+    .team-summary-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--primary-color);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .team-summary-title::before {
+      content: "▸";
+      font-size: 12px;
+      color: var(--primary-hover);
+    }
+
+    .team-chips {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .team-chip {
+      background: var(--secondary-light);
+      color: var(--text-secondary);
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      border: 1px solid var(--border-color);
+      transition: all 0.2s;
+    }
+
+    .team-chip:hover {
+      border-color: var(--primary-color);
+      color: var(--primary-color);
+    }
+
     .team-display h3 {
       color: var(--primary-color);
       font-size: 16px;
@@ -500,6 +555,9 @@
           <select id="teamSelect" multiple>
             <!-- Teams will be populated from database -->
           </select>
+          <div id="teamSummary" class="team-summary" hidden>
+            <!-- Team categories summary -->
+          </div>
           <button class="btn btn-primary" onclick="setTeams()" style="width: 100%; margin-top: 12px;">
             <span>✓</span>
             تعيين الفرق المحددة
@@ -663,15 +721,60 @@
         const data = await api.getHostInitData();
         console.log('Received host data:', data);
         
-        // Populate teams dropdown
+        // Populate teams dropdown with categories
         const teamSelect = document.getElementById('teamSelect');
+        const teamSummary = document.getElementById('teamSummary');
         teamSelect.innerHTML = '';
-        data.teams.forEach(team => {
-          const option = document.createElement('option');
-          option.value = team;
-          option.textContent = team;
-          teamSelect.appendChild(option);
-        });
+        teamSummary.innerHTML = '';
+
+        const hasCategories = data.teamCategories && Object.keys(data.teamCategories).length > 0;
+
+        if (hasCategories) {
+          Object.entries(data.teamCategories).forEach(([category, teamList]) => {
+            const optgroup = document.createElement('optgroup');
+            optgroup.label = category;
+
+            teamList.forEach(team => {
+              const option = document.createElement('option');
+              option.value = team;
+              option.textContent = team;
+              optgroup.appendChild(option);
+            });
+
+            teamSelect.appendChild(optgroup);
+
+            const section = document.createElement('div');
+            section.className = 'team-summary-section';
+
+            const title = document.createElement('h4');
+            title.className = 'team-summary-title';
+            title.textContent = category;
+            section.appendChild(title);
+
+            const chipsContainer = document.createElement('div');
+            chipsContainer.className = 'team-chips';
+
+            teamList.forEach(team => {
+              const chip = document.createElement('span');
+              chip.className = 'team-chip';
+              chip.textContent = team;
+              chipsContainer.appendChild(chip);
+            });
+
+            section.appendChild(chipsContainer);
+            teamSummary.appendChild(section);
+          });
+
+          teamSummary.hidden = false;
+        } else {
+          data.teams.forEach(team => {
+            const option = document.createElement('option');
+            option.value = team;
+            option.textContent = team;
+            teamSelect.appendChild(option);
+          });
+          teamSummary.hidden = true;
+        }
 
         // Populate question banks dropdown
         const bankSelect = document.getElementById('bankSelect');
@@ -719,6 +822,7 @@
             });
           }
         });
+        checkSessionReady();
       } catch (error) {
         console.error('Error loading initial data:', error);
         alert('خطأ في تحميل البيانات');

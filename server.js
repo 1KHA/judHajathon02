@@ -37,8 +37,11 @@ app.get('/api/supabase-config', (req, res) => {
 app.get('/api/host/init', async (req, res) => {
   try {
     const teams = await prisma.team.findMany({
-      distinct: ['name'],
-      select: { name: true }
+      select: { name: true, teamCategory: true },
+      orderBy: [
+        { teamCategory: 'asc' },
+        { name: 'asc' }
+      ]
     });
     const questions = await prisma.question.findMany({
       distinct: ['text'],
@@ -51,9 +54,19 @@ app.get('/api/host/init', async (req, res) => {
         }
       }
     });
+
+    const teamCategories = teams.reduce((acc, team) => {
+      const category = team.teamCategory || 'غير مصنف';
+      if (!acc[category]) {
+        acc[category] = [];
+      }
+      acc[category].push(team.name);
+      return acc;
+    }, {});
     
     res.json({
       teams: teams.map(t => t.name),
+      teamCategories,
       questions,
       questionBanks,
       sections: [...new Set(questions.map(q => q.section))]
