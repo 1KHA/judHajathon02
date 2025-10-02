@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>نتائج الجلسة</title>
+    <title>نتائج الجلسات</title>
     <style>
         * {
             margin: 0;
@@ -352,6 +352,17 @@
             color: var(--text-secondary);
         }
 
+        /* Error State */
+        .error-state {
+            background: #fee;
+            border: 1px solid var(--danger-color);
+            border-radius: var(--radius);
+            padding: 20px;
+            margin: 20px 0;
+            color: var(--danger-color);
+            text-align: center;
+        }
+
         /* Responsive Design */
         @media (max-width: 768px) {
             .container {
@@ -458,7 +469,6 @@
         </div>
     </div>
 
-    <script src="/socket.io/socket.io.js"></script>
     <script>
         // Function to calculate total points as the sum of individual answer points
         function calculateTotalPoints(answers) {
@@ -481,127 +491,149 @@
             return 'score-low';
         }
         
-        const socket = io();
-        
         // Fetch all session results when page loads
-        socket.emit('get-all-results');
-        
-        socket.on('all-results', (results) => {
+        async function loadResults() {
             const container = document.getElementById('results-container');
             
-            if (results.length === 0) {
-                container.innerHTML = `
-                    <div class="session">
-                        <div class="empty-state">
-                            <div class="empty-state-icon">📋</div>
-                            <h3>لا توجد نتائج متاحة</h3>
-                            <p>لم يتم إكمال أي جلسات بعد</p>
-                        </div>
-                    </div>
-                `;
-                return;
-            }
-            
-            container.innerHTML = results.map(session => {
-                // Calculate statistics for this session
-                const totalTeams = session.results.length;
-                const scores = session.results.map(r => calculateTotalPoints(JSON.parse(r.details).answers));
-                const maxScore = Math.max(...scores);
-                const avgScore = scores.reduce((a, b) => a + b, 0) / scores.length;
+            try {
+                const response = await fetch('/api/results/all');
                 
-                return `
-                    <div class="session">
-                        <div class="session-header">
-                            <div class="session-title">
-                                <h2>${session.name}</h2>
-                                <span class="session-badge">المعرف: ${session.sessionId}</span>
-                            </div>
-                            <div class="session-meta">
-                                ${new Date(session.createdAt).toLocaleString('ar-SA')}
-                            </div>
-                        </div>
-                        
-                        <div class="stats-grid">
-                            <div class="stat-card">
-                                <div class="stat-value">${totalTeams}</div>
-                                <div class="stat-label">عدد الفرق</div>
-                            </div>
-                            <div class="stat-card">
-                                <div class="stat-value">${maxScore.toFixed(2)}</div>
-                                <div class="stat-label">أعلى نقاط</div>
-                            </div>
-                            <div class="stat-card">
-                                <div class="stat-value">${avgScore.toFixed(2)}</div>
-                                <div class="stat-label">متوسط النقاط</div>
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const results = await response.json();
+                
+                if (results.length === 0) {
+                    container.innerHTML = `
+                        <div class="session">
+                            <div class="empty-state">
+                                <div class="empty-state-icon">📋</div>
+                                <h3>لا توجد نتائج متاحة</h3>
+                                <p>لم يتم إكمال أي جلسات بعد</p>
                             </div>
                         </div>
-                        
-                        <div>
-                            ${session.results.map((result, index) => {
-                                const totalPoints = calculateTotalPoints(JSON.parse(result.details).answers);
-                                const isWinner = index === 0 && totalPoints === maxScore;
-                                
-                                return `
-                                    <div class="team-result">
-                                        <div class="team-header">
-                                            <h3 class="team-name">
-                                                ${isWinner ? '🥇' : ''} ${result.team.name}
-                                            </h3>
-                                            <div class="team-score">
-                                                ${totalPoints.toFixed(2)} نقطة
+                    `;
+                    return;
+                }
+                
+                container.innerHTML = results.map(session => {
+                    // Calculate statistics for this session
+                    const totalTeams = session.results.length;
+                    const scores = session.results.map(r => calculateTotalPoints(JSON.parse(r.details).answers));
+                    const maxScore = Math.max(...scores);
+                    const avgScore = scores.reduce((a, b) => a + b, 0) / scores.length;
+                    
+                    return `
+                        <div class="session">
+                            <div class="session-header">
+                                <div class="session-title">
+                                    <h2>${session.name}</h2>
+                                    <span class="session-badge">المعرف: ${session.sessionId}</span>
+                                </div>
+                                <div class="session-meta">
+                                    ${new Date(session.createdAt).toLocaleString('ar-SA')}
+                                </div>
+                            </div>
+                            
+                            <div class="stats-grid">
+                                <div class="stat-card">
+                                    <div class="stat-value">${totalTeams}</div>
+                                    <div class="stat-label">عدد الفرق</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-value">${maxScore.toFixed(2)}</div>
+                                    <div class="stat-label">أعلى نقاط</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-value">${avgScore.toFixed(2)}</div>
+                                    <div class="stat-label">متوسط النقاط</div>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                ${session.results.map((result, index) => {
+                                    const totalPoints = calculateTotalPoints(JSON.parse(result.details).answers);
+                                    const isWinner = index === 0 && totalPoints === maxScore;
+                                    
+                                    return `
+                                        <div class="team-result">
+                                            <div class="team-header">
+                                                <h3 class="team-name">
+                                                    ${isWinner ? '🥇' : ''} ${result.team.name}
+                                                </h3>
+                                                <div class="team-score">
+                                                    ${totalPoints.toFixed(2)} نقطة
+                                                </div>
+                                            </div>
+                                            <div style="overflow-x: auto;">
+                                                <table class="results-table">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>السؤال</th>
+                                                            <th>وزن السؤال</th>
+                                                            <th>المحكم</th>
+                                                            <th>الإجابة</th>
+                                                            <th>وزن الخيار</th>
+                                                            <th>أقصى وزن</th>
+                                                            <th>النقاط</th>
+                                                            <th>الحساب</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        ${JSON.parse(result.details).answers.map(answer => {
+                                                            const points = parseFloat(answer.points || 0);
+                                                            const badgeClass = getScoreBadgeClass(points, parseFloat(answer.questionWeight || 1));
+                                                            
+                                                            return `
+                                                                <tr>
+                                                                    <td>${answer.questionText || 'غير متاح'}</td>
+                                                                    <td>${answer.questionWeight || '1'}</td>
+                                                                    <td>${answer.judgeName || 'غير متاح'}</td>
+                                                                    <td>${answer.answer || 'غير متاح'}</td>
+                                                                    <td>${answer.optionWeight || '0'}</td>
+                                                                    <td>${answer.maxOptionWeight || '0'}</td>
+                                                                    <td>
+                                                                        <span class="score-badge ${badgeClass}">
+                                                                            ${points.toFixed(2)}
+                                                                        </span>
+                                                                    </td>
+                                                                    <td>
+                                                                        <span class="calculation">
+                                                                            (${answer.optionWeight || '0'} ÷ ${answer.maxOptionWeight || '0'}) × ${answer.questionWeight || '1'}
+                                                                        </span>
+                                                                    </td>
+                                                                </tr>
+                                                            `;
+                                                        }).join('')}
+                                                    </tbody>
+                                                </table>
                                             </div>
                                         </div>
-                                        <div style="overflow-x: auto;">
-                                            <table class="results-table">
-                                                <thead>
-                                                    <tr>
-                                                        <th>السؤال</th>
-                                                        <th>وزن السؤال</th>
-                                                        <th>المحكم</th>
-                                                        <th>الإجابة</th>
-                                                        <th>وزن الخيار</th>
-                                                        <th>أقصى وزن</th>
-                                                        <th>النقاط</th>
-                                                        <th>الحساب</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    ${JSON.parse(result.details).answers.map(answer => {
-                                                        const points = parseFloat(answer.points || 0);
-                                                        const badgeClass = getScoreBadgeClass(points, parseFloat(answer.questionWeight || 1));
-                                                        
-                                                        return `
-                                                            <tr>
-                                                                <td>${answer.questionText || 'غير متاح'}</td>
-                                                                <td>${answer.questionWeight || '1'}</td>
-                                                                <td>${answer.judgeName || 'غير متاح'}</td>
-                                                                <td>${answer.answer || 'غير متاح'}</td>
-                                                                <td>${answer.optionWeight || '0'}</td>
-                                                                <td>${answer.maxOptionWeight || '0'}</td>
-                                                                <td>
-                                                                    <span class="score-badge ${badgeClass}">
-                                                                        ${points.toFixed(2)}
-                                                                    </span>
-                                                                </td>
-                                                                <td>
-                                                                    <span class="calculation">
-                                                                        (${answer.optionWeight || '0'} ÷ ${answer.maxOptionWeight || '0'}) × ${answer.questionWeight || '1'}
-                                                                    </span>
-                                                                </td>
-                                                            </tr>
-                                                        `;
-                                                    }).join('')}
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-                                `;
-                            }).join('')}
+                                    `;
+                                }).join('')}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } catch (error) {
+                console.error('Error loading results:', error);
+                container.innerHTML = `
+                    <div class="session">
+                        <div class="error-state">
+                            <h3>⚠️ خطأ في تحميل النتائج</h3>
+                            <p>${error.message}</p>
+                            <button onclick="loadResults()" style="margin-top: 16px; padding: 8px 16px; background: var(--primary-color); color: white; border: none; border-radius: 6px; cursor: pointer;">
+                                إعادة المحاولة
+                            </button>
                         </div>
                     </div>
                 `;
-            }).join('');
-        });
+            }
+        }
+        
+        // Load results on page load
+        loadResults();
     </script>
 </body>
 </html>

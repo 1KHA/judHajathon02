@@ -818,6 +818,47 @@ app.get('/api/session/:sessionId/leaderboard', async (req, res) => {
   }
 });
 
+// Get all session results
+app.get('/api/results/all', async (req, res) => {
+  try {
+    const sessions = await prisma.session.findMany({
+      where: {
+        status: 'ended'
+      },
+      include: {
+        sessionResults: {
+          include: {
+            team: true
+          },
+          orderBy: {
+            totalPoints: 'desc'
+          }
+        }
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    });
+    
+    const results = sessions.map(session => ({
+      sessionId: session.sessionId,
+      name: session.name,
+      createdAt: session.createdAt,
+      results: session.sessionResults.map(result => ({
+        team: {
+          name: result.team.name
+        },
+        details: result.details
+      }))
+    }));
+    
+    res.json(results);
+  } catch (error) {
+    console.error('Error fetching all results:', error);
+    res.status(500).json({ error: 'Failed to fetch results' });
+  }
+});
+
 // Save questions
 app.post('/api/questions/save', async (req, res) => {
   const { questions, totalPoints, bankName } = req.body;

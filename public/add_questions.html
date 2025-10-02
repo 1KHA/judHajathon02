@@ -311,6 +311,12 @@
             box-shadow: var(--shadow-md);
         }
 
+        .btn-primary:disabled {
+            background: var(--secondary-color);
+            cursor: not-allowed;
+            transform: none;
+        }
+
         .btn-secondary {
             background: var(--secondary-color);
             color: white;
@@ -331,6 +337,12 @@
             background: #059669;
             transform: translateY(-1px);
             box-shadow: var(--shadow-md);
+        }
+
+        .btn-success:disabled {
+            background: var(--secondary-color);
+            cursor: not-allowed;
+            transform: none;
         }
 
         .btn-danger {
@@ -472,6 +484,22 @@
             }
         }
 
+        /* Error Message */
+        .error-message {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--danger-color);
+            color: white;
+            padding: 16px 24px;
+            border-radius: 8px;
+            box-shadow: var(--shadow-lg);
+            font-weight: 600;
+            z-index: 1000;
+            animation: slideDown 0.3s ease-out;
+        }
+
         /* Responsive Design */
         @media (max-width: 768px) {
             .container {
@@ -568,9 +596,7 @@
         </div>
     </div>
 
-    <script src="/socket.io/socket.io.js"></script>
     <script>
-        const socket = io();
         let sections = [];
         let totalPoints = 100;
 
@@ -829,7 +855,18 @@
             `;
         }
 
-        function saveQuestions() {
+        function showMessage(message, isError = false) {
+            const msgEl = document.createElement('div');
+            msgEl.className = isError ? 'error-message' : 'success-message';
+            msgEl.textContent = message;
+            document.body.appendChild(msgEl);
+            
+            setTimeout(() => {
+                msgEl.remove();
+            }, 3000);
+        }
+
+        async function saveQuestions() {
             if (sections.length === 0) {
                 alert('يرجى إضافة قسم واحد على الأقل مع الأسئلة');
                 return;
@@ -887,35 +924,47 @@
                 return;
             }
 
-            socket.emit('save-questions', {
-                questions,
-                totalPoints: totalPoints,
-                bankName: bankName
-            });
+            // Disable save button during request
+            const saveBtn = document.getElementById('save-questions');
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<span>⏳</span> جاري الحفظ...';
+
+            try {
+                const response = await fetch('/api/questions/save', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        questions,
+                        totalPoints: totalPoints,
+                        bankName: bankName
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'فشل حفظ الأسئلة');
+                }
+
+                // Show success message
+                showMessage(`✅ تم حفظ ${data.questions.length} سؤال في البنك بنجاح!`);
+
+                // Clear form after successful save
+                sections = [];
+                renderSections();
+                document.getElementById('bank-name').value = '';
+
+            } catch (error) {
+                console.error('Error saving questions:', error);
+                showMessage(`⚠️ خطأ: ${error.message}`, true);
+            } finally {
+                // Re-enable save button
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = '<span>💾</span> حفظ الأسئلة';
+            }
         }
-
-        // Listen for questions saved event
-        socket.on('questions-saved', function(data) {
-            // Show success message
-            const successMsg = document.createElement('div');
-            successMsg.className = 'success-message';
-            successMsg.innerHTML = `✅ تم حفظ ${data.questions.length} سؤال في البنك بنجاح!`;
-            document.body.appendChild(successMsg);
-            
-            setTimeout(() => {
-                successMsg.remove();
-            }, 3000);
-
-            // Clear form after successful save
-            sections = [];
-            renderSections();
-            document.getElementById('bank-name').value = '';
-        });
-
-        // Listen for error messages
-        socket.on('error-message', function(message) {
-            alert(`خطأ: ${message}`);
-        });
 
         // Initialize with one section
         addSection();

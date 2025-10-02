@@ -662,6 +662,7 @@
       
       // Show submit button when questions are received
       document.getElementById('submitFinalBtn').style.display = 'block';
+      document.getElementById('submitFinalBtn').disabled = false; // Enable submit for this team
       document.getElementById('submitFinalBtn').onclick = submitFinalAnswers;
 
       currentQuestions.forEach((question, index) => {
